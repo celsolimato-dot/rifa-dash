@@ -159,26 +159,26 @@ const AllRaffles = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <DollarSign className="w-4 h-4 text-accent-gold" />
-                    <span className="text-foreground-muted">R$ {raffle.price.toFixed(2)}</span>
+                    <span className="text-foreground-muted">R$ {raffle.ticket_price.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-foreground-muted">{raffle.soldTickets}/{raffle.totalTickets}</span>
+                    <span className="text-foreground-muted">{raffle.sold_tickets}/{raffle.total_tickets}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-accent-success" />
-                    <span className="text-foreground-muted">{new Date(raffle.drawDate).toLocaleDateString()}</span>
+                    <span className="text-foreground-muted">{new Date(raffle.draw_date).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4 text-foreground-muted" />
-                    <span className="text-foreground-muted">{new Date(raffle.createdAt).toLocaleDateString()}</span>
+                    <span className="text-foreground-muted">{new Date(raffle.created_at || '').toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 <div className="w-full bg-background-secondary rounded-full h-2">
                   <div 
                     className="bg-primary h-2 rounded-full transition-all"
-                    style={{ width: `${(raffle.soldTickets / raffle.totalTickets) * 100}%` }}
+                    style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }}
                   />
                 </div>
 
@@ -210,18 +210,18 @@ const AllRaffles = () => {
                           <div className="space-y-2">
                             <h4 className="font-semibold text-foreground">Informações Gerais</h4>
                             <div className="space-y-1 text-sm">
-                              <p><span className="text-foreground-muted">Preço:</span> R$ {selectedRaffle.price.toFixed(2)}</p>
-                              <p><span className="text-foreground-muted">Total de Números:</span> {selectedRaffle.totalTickets}</p>
-                              <p><span className="text-foreground-muted">Vendidos:</span> {selectedRaffle.soldTickets}</p>
-                              <p><span className="text-foreground-muted">Disponíveis:</span> {selectedRaffle.totalTickets - selectedRaffle.soldTickets}</p>
+                              <p><span className="text-foreground-muted">Preço:</span> R$ {selectedRaffle.ticket_price.toFixed(2)}</p>
+                              <p><span className="text-foreground-muted">Total de Números:</span> {selectedRaffle.total_tickets}</p>
+                              <p><span className="text-foreground-muted">Vendidos:</span> {selectedRaffle.sold_tickets}</p>
+                              <p><span className="text-foreground-muted">Disponíveis:</span> {selectedRaffle.total_tickets - selectedRaffle.sold_tickets}</p>
                             </div>
                           </div>
                           
                           <div className="space-y-2">
                             <h4 className="font-semibold text-foreground">Datas</h4>
                             <div className="space-y-1 text-sm">
-                              <p><span className="text-foreground-muted">Criada em:</span> {new Date(selectedRaffle.createdAt).toLocaleDateString()}</p>
-                              <p><span className="text-foreground-muted">Sorteio:</span> {new Date(selectedRaffle.drawDate).toLocaleDateString()}</p>
+                              <p><span className="text-foreground-muted">Criada em:</span> {new Date(selectedRaffle.created_at || '').toLocaleDateString()}</p>
+                              <p><span className="text-foreground-muted">Sorteio:</span> {new Date(selectedRaffle.draw_date).toLocaleDateString()}</p>
                               <p><span className="text-foreground-muted">Status:</span> {getStatusBadge(selectedRaffle.status)}</p>
                             </div>
                           </div>
@@ -237,11 +237,11 @@ const AllRaffles = () => {
                           <div className="w-full bg-background-secondary rounded-full h-3">
                             <div 
                               className="bg-primary h-3 rounded-full transition-all"
-                              style={{ width: `${(selectedRaffle.soldTickets / selectedRaffle.totalTickets) * 100}%` }}
+                              style={{ width: `${(selectedRaffle.sold_tickets / selectedRaffle.total_tickets) * 100}%` }}
                             />
                           </div>
                           <p className="text-sm text-foreground-muted">
-                            {((selectedRaffle.soldTickets / selectedRaffle.totalTickets) * 100).toFixed(1)}% vendido
+                            {((selectedRaffle.sold_tickets / selectedRaffle.total_tickets) * 100).toFixed(1)}% vendido
                           </p>
                         </div>
                       </div>

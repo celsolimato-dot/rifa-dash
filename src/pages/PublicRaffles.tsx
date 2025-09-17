@@ -110,7 +110,7 @@ const PublicRaffles = () => {
             <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="relative">
                 <img
-                  src={raffle.image}
+                  src={raffle.image_url}
                   alt={raffle.title}
                   className="w-full h-48 object-cover"
                 />
@@ -127,12 +127,12 @@ const PublicRaffles = () => {
                   <div className="flex items-center space-x-2">
                     <DollarSign className="w-4 h-4 text-accent-success" />
                     <span className="text-2xl font-bold text-accent-success">
-                      R$ {raffle.price.toFixed(2)}
+                      R$ {raffle.ticket_price.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1 text-foreground-muted">
                     <Clock className="w-4 h-4" />
-                    <span className="text-sm">{raffle.timeLeft}</span>
+                    <span className="text-sm">Disponível</span>
                   </div>
                 </div>
               </CardHeader>
@@ -143,11 +143,11 @@ const PublicRaffles = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-foreground-muted">Progresso</span>
                     <span className="font-medium">
-                      {raffle.soldTickets}/{raffle.totalTickets}
+                      {raffle.sold_tickets}/{raffle.total_tickets}
                     </span>
                   </div>
                   <Progress 
-                    value={(raffle.soldTickets / raffle.totalTickets) * 100} 
+                    value={(raffle.sold_tickets / raffle.total_tickets) * 100} 
                     className="h-2"
                   />
                 </div>
@@ -156,11 +156,11 @@ const PublicRaffles = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <Users className="w-4 h-4 text-primary" />
-                    <span>{raffle.soldTickets} participantes</span>
+                    <span>{raffle.sold_tickets} participantes</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-primary" />
-                    <span>{new Date(raffle.drawDate).toLocaleDateString('pt-BR')}</span>
+                    <span>{new Date(raffle.draw_date).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
 
@@ -203,7 +203,7 @@ const PublicRaffles = () => {
             setIsModalOpen(false);
             setSelectedRaffle(null);
           }}
-          raffle={selectedRaffle}
+          raffle={selectedRaffle as any}
         />
       )}
     </div>

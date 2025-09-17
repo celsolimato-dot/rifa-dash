@@ -53,7 +53,7 @@ export const ClientPerfilSection: React.FC = () => {
         ClientProfileService.getUserAchievements(user.id)
       ]);
       
-      setUserStats(stats);
+      setUserStats(stats as UserStats);
       setAchievements(userAchievements);
     } catch (error) {
       console.error('Erro ao carregar dados do perfil:', error);

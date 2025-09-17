@@ -126,15 +126,15 @@ export default function Messages() {
     try {
       setIsLoading(true);
       const [messagesData, rafflesData, templatesData, ticketsData] = await Promise.all([
-        messageService.getMessages(),
+        messageService.getAllMessages(),
         RaffleService.getRaffles(),
         messageService.getTemplates(),
         messageService.getSupportTickets()
       ]);
-      setMessages(messagesData);
+      setMessages(messagesData as any);
       setRaffles(rafflesData);
-      setTemplates(templatesData);
-      setSupportTickets(ticketsData);
+      setTemplates(templatesData as any);
+      setSupportTickets(ticketsData as any);
       
       // Extrair participantes únicos de todas as rifas
       const allParticipants: Participant[] = [];

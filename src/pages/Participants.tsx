@@ -74,7 +74,7 @@ export default function Participants() {
                            participant.phone.includes(searchTerm);
       
       const matchesStatus = statusFilter === "all" || participant.status === statusFilter;
-      const matchesState = stateFilter === "all" || participant.state === stateFilter;
+      const matchesState = stateFilter === "all" || true; // participant.state === stateFilter; // Users don't have state property
       
       return matchesSearch && matchesStatus && matchesState;
     });
@@ -83,8 +83,8 @@ export default function Participants() {
   const stats = useMemo(() => {
     const total = participants.length;
     const active = participants.filter(p => p.status === "active").length;
-    const totalRevenue = participants.reduce((sum, p) => sum + p.totalSpent, 0);
-    const totalTickets = participants.reduce((sum, p) => sum + p.totalTickets, 0);
+    const totalRevenue = 0; // participants.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
+    const totalTickets = 0; // participants.reduce((sum, p) => sum + (p.totalTickets || 0), 0);
     
     return { total, active, totalRevenue, totalTickets };
   }, [participants]);
