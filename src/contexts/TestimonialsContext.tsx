@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { TestimonialService, Testimonial } from '../services/testimonialService';
 
+export type { Testimonial };
+
 interface TestimonialsContextType {
   testimonials: Testimonial[];
   isLoading: boolean;

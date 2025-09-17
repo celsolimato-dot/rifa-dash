@@ -27,9 +27,8 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = await login(loginData.email, loginData.password);
-    
-    if (success) {
+    try {
+      await login(loginData.email, loginData.password);
       toast({
         title: "Login realizado com sucesso!",
         description: "Redirecionando para seu painel...",
@@ -39,12 +38,12 @@ const Auth = () => {
       if (loginData.email === 'admin@rifou.net') {
         navigate('/admin');
       } else {
-        navigate('/cliente');
+        navigate('/dashboard');
       }
-    } else {
+    } catch (error) {
       toast({
         title: "Erro no login",
-        description: "Email ou senha incorretos. Tente novamente.",
+        description: "Email ou senha incorretos.",
         variant: "destructive",
       });
     }

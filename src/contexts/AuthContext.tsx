@@ -10,6 +10,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   avatar?: string;
+  cpf?: string;
 }
 
 interface RegisterData {

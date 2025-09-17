@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { mockSupabase } from './supabaseService';
 
 export interface UserStats {
   totalParticipacoes: number;
@@ -15,13 +15,14 @@ export interface Achievement {
   description: string;
   earned: boolean;
   date: string | null;
+  icon: string;
 }
 
 export class ClientProfileService {
   static async getUserStats(userId: string): Promise<UserStats> {
     try {
       // Buscar participações do usuário
-      const { data: participations, error: participationsError } = await supabase
+      const { data: participations, error: participationsError } = await mockSupabase
         .from('raffle_participants')
         .select(`
           id,
@@ -38,7 +39,7 @@ export class ClientProfileService {
       if (participationsError) throw participationsError;
 
       // Buscar dados do usuário
-      const { data: userData, error: userError } = await supabase
+      const { data: userData, error: userError } = await mockSupabase
         .from('profiles')
         .select('created_at, last_login')
         .eq('id', userId)
@@ -95,28 +96,32 @@ export class ClientProfileService {
           title: 'Primeiro Prêmio',
           description: 'Ganhou seu primeiro prêmio',
           earned: stats.premiosGanhos > 0,
-          date: stats.premiosGanhos > 0 ? new Date().toISOString() : null
+          date: stats.premiosGanhos > 0 ? new Date().toISOString() : null,
+          icon: '🏆'
         },
         {
           id: 2,
           title: 'Participante Ativo',
           description: 'Participou de 10+ rifas',
           earned: stats.totalParticipacoes >= 10,
-          date: stats.totalParticipacoes >= 10 ? new Date().toISOString() : null
+          date: stats.totalParticipacoes >= 10 ? new Date().toISOString() : null,
+          icon: '🎯'
         },
         {
           id: 3,
           title: 'Investidor',
           description: 'Investiu mais de R$ 500',
           earned: stats.totalInvestido >= 500,
-          date: stats.totalInvestido >= 500 ? new Date().toISOString() : null
+          date: stats.totalInvestido >= 500 ? new Date().toISOString() : null,
+          icon: '💰'
         },
         {
           id: 4,
           title: 'Sortudo',
           description: 'Ganhe 5 prêmios',
           earned: stats.premiosGanhos >= 5,
-          date: stats.premiosGanhos >= 5 ? new Date().toISOString() : null
+          date: stats.premiosGanhos >= 5 ? new Date().toISOString() : null,
+          icon: '🍀'
         }
       ];
 

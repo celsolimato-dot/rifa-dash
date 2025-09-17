@@ -124,18 +124,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
 
     try {
-      const success = await login(loginForm.email, loginForm.password);
-      if (success) {
-        setSuccess('Login realizado com sucesso!');
-        setTimeout(() => {
-          handleClose();
-          onSuccess();
-        }, 1000);
-      } else {
-        setError('Email ou senha incorretos');
-      }
-    } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.');
+      await login(loginForm.email, loginForm.password);
+      setSuccess('Login realizado com sucesso!');
+      setTimeout(() => {
+        handleClose();
+        onSuccess();
+      }, 1000);
+    } catch (error) {
+      setError('Email ou senha incorretos');
     }
   };
 
