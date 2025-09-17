@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { RaffleService, Raffle } from "../services/raffleService";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 import { 
   Play, 
   Pause, 
@@ -67,7 +69,7 @@ export default function Sorteador() {
     
     if (isDrawing && selectedRaffle) {
       interval = setInterval(() => {
-        const randomTicket = String(Math.floor(Math.random() * selectedRaffle.totalTickets) + 1).padStart(3, '0');
+        const randomTicket = String(Math.floor(Math.random() * selectedRaffle.total_tickets) + 1).padStart(3, '0');
         setCurrentNumber(randomTicket);
         setProgress(prev => Math.min(prev + 2, 100));
       }, 50);
@@ -90,32 +92,40 @@ export default function Sorteador() {
     }, 5000);
   };
 
-  const finishDraw = () => {
+  const finishDraw = async () => {
     if (!selectedRaffle) return;
     
     setIsDrawing(false);
     setProgress(100);
     
-    // Get all sold tickets
-    const allTickets: string[] = [];
-    selectedRaffle.participants.forEach(participant => {
-      allTickets.push(...participant.ticketNumbers);
-    });
+    // Get all sold tickets from database
+    const { data: tickets } = await supabase
+      .from('tickets')
+      .select('number, buyer_name, buyer_email')
+      .eq('raffle_id', selectedRaffle.id)
+      .eq('status', 'sold');
+    
+    if (!tickets || tickets.length === 0) {
+      toast.error('Nenhum bilhete vendido para esta rifa');
+      return;
+    }
     
     // Select random winner
-    const winnerTicket = allTickets[Math.floor(Math.random() * allTickets.length)];
-    const winner = selectedRaffle.participants.find(p => 
-      p.ticketNumbers.includes(winnerTicket)
-    );
+    const winnerTicket = tickets[Math.floor(Math.random() * tickets.length)];
+    const winner = {
+      name: winnerTicket.buyer_name,
+      email: winnerTicket.buyer_email,
+      ticketNumber: winnerTicket.number.toString()
+    };
     
     if (winner) {
       const result: DrawResult = {
-        winnerTicket,
-        winner,
+        winnerTicket: winner.ticketNumber,
+        winner: winner,
         timestamp: new Date().toISOString()
       };
       
-      setCurrentNumber(winnerTicket);
+      setCurrentNumber(winner.ticketNumber);
       setDrawResult(result);
       setShowConfetti(true);
     }
@@ -197,17 +207,17 @@ export default function Sorteador() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="flex items-center">
                           <Ticket className="w-3 h-3 mr-1 text-foreground-muted" />
-                          {raffle.soldTickets}/{raffle.totalTickets}
-                        </div>
-                        <div className="flex items-center">
-                          <Users className="w-3 h-3 mr-1 text-foreground-muted" />
-                          {raffle.participants.length}
+                           {raffle.sold_tickets}/{raffle.total_tickets}
+                         </div>
+                         <div className="flex items-center">
+                           <Users className="w-3 h-3 mr-1 text-foreground-muted" />
+                           {raffle.sold_tickets}
                         </div>
                       </div>
                       
                       <div className="flex items-center text-xs">
                         <Calendar className="w-3 h-3 mr-1 text-foreground-muted" />
-                        Sorteio: {new Date(raffle.drawDate).toLocaleDateString('pt-BR')}
+                        Sorteio: {new Date(raffle.draw_date).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                   </CardContent>
@@ -230,19 +240,19 @@ export default function Sorteador() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground-muted">Total de Bilhetes</p>
-                    <p className="text-lg font-bold">{selectedRaffle.totalTickets}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground-muted">Vendidos</p>
-                    <p className="text-lg font-bold text-green-600">{selectedRaffle.soldTickets}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground-muted">Participantes</p>
-                    <p className="text-lg font-bold">{selectedRaffle.participants.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground-muted">Valor</p>
-                    <p className="text-lg font-bold">R$ {selectedRaffle.price.toFixed(2)}</p>
+                     <p className="text-lg font-bold">{selectedRaffle.total_tickets}</p>
+                   </div>
+                   <div>
+                     <p className="text-sm font-medium text-foreground-muted">Vendidos</p>
+                     <p className="text-lg font-bold text-green-600">{selectedRaffle.sold_tickets}</p>
+                   </div>
+                   <div>
+                     <p className="text-sm font-medium text-foreground-muted">Participantes</p>
+                     <p className="text-lg font-bold">{selectedRaffle.sold_tickets}</p>
+                   </div>
+                   <div>
+                     <p className="text-sm font-medium text-foreground-muted">Valor</p>
+                     <p className="text-lg font-bold">R$ {selectedRaffle.prize_value.toFixed(2)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -354,9 +364,11 @@ export default function Sorteador() {
 
                   {/* Participants List */}
                   <div>
-                    <h4 className="font-medium mb-3">Participantes ({selectedRaffle.participants.length})</h4>
+                    <h4 className="font-medium mb-3">Participantes ({selectedRaffle.sold_tickets || 0})</h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {selectedRaffle.participants.map((participant) => (
+                      <div className="text-sm text-muted-foreground">
+                        Funcionalidade temporariamente indisponível - dados sendo migrados para sistema real
+                      </div>
                         <div 
                           key={participant.id} 
                           className={`
@@ -378,7 +390,7 @@ export default function Sorteador() {
                             </p>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
                 </div>

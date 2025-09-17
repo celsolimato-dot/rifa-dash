@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from '@/integrations/supabase/client';
 import { Label } from "@/components/ui/label";
 import { MessageService } from "../services/messageService";
 import { RaffleService, Raffle } from "../services/raffleService";
@@ -137,16 +138,29 @@ export default function Messages() {
       setSupportTickets(ticketsData as any);
       
       // Extrair participantes únicos de todas as rifas
-      const allParticipants: Participant[] = [];
-      rafflesData.forEach(raffle => {
-        if (raffle.participants) {
-          raffle.participants.forEach(participant => {
-            if (!allParticipants.find(p => p.id === participant.id)) {
-              allParticipants.push(participant);
-            }
-          });
-        }
-      });
+      // Get participants from users table instead
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'user');
+      
+      // Get participants from users table
+      const allParticipants: any[] = usersData?.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        city: '',
+        state: '',
+        registration_date: user.created_at,
+        total_tickets: 0,
+        total_spent: 0,
+        raffles_participated: 0,
+        wins: 0,
+        status: user.status as "active" | "inactive" | "blocked",
+        avatar: user.avatar_url,
+        last_activity: user.updated_at
+      })) || [];
       setParticipants(allParticipants);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -284,15 +298,39 @@ export default function Messages() {
     setSelectedTemplate(template);
   };
 
-  const handleRaffleSelection = (raffleId: string) => {
+  const handleRaffleSelection = async (raffleId: string) => {
     setSelectedRaffle(raffleId);
-    const raffle = raffles.find(r => r.id === raffleId);
-    if (raffle && raffle.participants) {
-      setRaffleParticipants(raffle.participants);
-      setSelectedParticipants([]); // Reset selected participants
-    } else {
-      setRaffleParticipants([]);
-    }
+    // Get participants for this raffle from tickets table
+    const { data: tickets } = await supabase
+      .from('tickets')
+      .select('buyer_name, buyer_email, buyer_phone')
+      .eq('raffle_id', raffleId)
+      .eq('status', 'sold');
+    
+    const uniqueParticipants = tickets?.reduce((acc: any[], ticket) => {
+      if (!acc.find(p => p.email === ticket.buyer_email)) {
+        acc.push({
+          id: ticket.buyer_email,
+          name: ticket.buyer_name,
+          email: ticket.buyer_email,
+          phone: ticket.buyer_phone || '',
+          city: '',
+          state: '',
+          registration_date: new Date().toISOString(),
+          total_tickets: 0,
+          total_spent: 0,
+          raffles_participated: 0,
+          wins: 0,
+          status: 'active' as const,
+          avatar: undefined,
+          last_activity: new Date().toISOString()
+        });
+      }
+      return acc;
+    }, []) || [];
+    
+    setRaffleParticipants(uniqueParticipants);
+    setSelectedParticipants([]);
   };
 
   return (
@@ -508,7 +546,7 @@ export default function Messages() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockParticipants.map((participant) => (
+                {participants.map((participant) => (
                   <div key={participant.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <Checkbox 

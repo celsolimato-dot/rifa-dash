@@ -133,4 +133,48 @@ export class RealRaffleService {
 
     return data || [];
   }
+
+  static async getRevenueMetrics() {
+    try {
+      const { data: raffles, error } = await supabase
+        .from('raffles')
+        .select('revenue, created_at');
+      
+      if (error) throw error;
+      
+      const total = raffles?.reduce((sum, raffle) => sum + (raffle.revenue || 0), 0) || 0;
+      const thisMonth = raffles?.filter(r => {
+        const created = new Date(r.created_at);
+        const now = new Date();
+        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+      }).reduce((sum, raffle) => sum + (raffle.revenue || 0), 0) || 0;
+      
+      return { total, thisMonth, lastMonth: 0, growth: 0 };
+    } catch (error) {
+      console.error('Error getting revenue metrics:', error);
+      return { error: true };
+    }
+  }
+
+  static async getSalesData() {
+    try {
+      const { data: raffles, error } = await supabase
+        .from('raffles')
+        .select('sold_tickets, created_at')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      
+      if (error) throw error;
+      
+      const data = raffles?.map(raffle => ({
+        date: raffle.created_at,
+        sales: raffle.sold_tickets || 0
+      })) || [];
+      
+      return { data };
+    } catch (error) {
+      console.error('Error getting sales data:', error);
+      return { error: true };
+    }
+  }
 }

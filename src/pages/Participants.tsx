@@ -271,22 +271,22 @@ export default function Participants() {
                     <td className="p-4">
                       <div className="flex items-center text-sm">
                         <MapPin className="w-4 h-4 mr-2 text-foreground-muted" />
-                        {participant.city}, {participant.state}
+                        N/A
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="space-y-1 text-sm">
+                        <div className="space-y-1 text-sm">
                         <div className="flex items-center">
                           <Ticket className="w-4 h-4 mr-2 text-foreground-muted" />
-                          {participant.totalTickets} bilhetes
+                          0 bilhetes
                         </div>
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-2 text-foreground-muted" />
-                          R$ {participant.totalSpent.toFixed(2)}
+                          R$ 0.00
                         </div>
                         <div className="flex items-center">
                           <Trophy className="w-4 h-4 mr-2 text-foreground-muted" />
-                          {participant.wins} vitórias
+                          0 vitórias
                         </div>
                       </div>
                     </td>
@@ -318,7 +318,7 @@ export default function Participants() {
                               {/* Participant Info */}
                               <div className="flex items-start space-x-4">
                                 <Avatar className="w-16 h-16">
-                                  <AvatarImage src={selectedParticipant.avatar} />
+                                  <AvatarImage src={selectedParticipant.avatar_url || "/placeholder.svg"} />
                                   <AvatarFallback className="text-lg">
                                     {getInitials(selectedParticipant.name)}
                                   </AvatarFallback>
@@ -336,7 +336,7 @@ export default function Participants() {
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium text-foreground-muted">Localização</p>
-                                      <p className="text-foreground">{selectedParticipant.city}, {selectedParticipant.state}</p>
+                                      <p className="text-foreground">N/A</p>
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium text-foreground-muted">Status</p>
@@ -350,25 +350,25 @@ export default function Participants() {
                               <div className="grid grid-cols-4 gap-4">
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.totalTickets}</p>
+                                    <p className="text-2xl font-bold text-foreground">0</p>
                                     <p className="text-sm text-foreground-muted">Bilhetes Comprados</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">R$ {selectedParticipant.totalSpent.toFixed(2)}</p>
+                                    <p className="text-2xl font-bold text-foreground">R$ 0.00</p>
                                     <p className="text-sm text-foreground-muted">Total Gasto</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.rafflesParticipated}</p>
+                                    <p className="text-2xl font-bold text-foreground">0</p>
                                     <p className="text-sm text-foreground-muted">Rifas Participadas</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.wins}</p>
+                                    <p className="text-2xl font-bold text-foreground">0</p>
                                     <p className="text-sm text-foreground-muted">Vitórias</p>
                                   </CardContent>
                                 </Card>

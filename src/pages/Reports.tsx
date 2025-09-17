@@ -75,17 +75,30 @@ export default function Reports() {
         });
       }
 
-      // Carregar dados de vendas
+      // Carregar dados de vendas - convert format
       const salesResponse = await RaffleService.getSalesData();
       if (!salesResponse.error) {
-        setSalesData(salesResponse.data);
+        const formattedSales = salesResponse.data?.map((item: any) => ({
+          month: item.date,
+          revenue: 0,
+          tickets: item.sales,
+          raffles: 1
+        })) || [];
+        setSalesData(formattedSales);
       }
 
-      // Carregar top rifas
-      const topRafflesResponse = await RaffleService.getTopRaffles();
-      if (!topRafflesResponse.error) {
-        setTopRaffles(topRafflesResponse.raffles);
-      }
+      // Carregar top rifas - convert format with all required properties
+      const topRafflesResponse = await RaffleService.getRaffles();
+      const formattedTopRaffles = topRafflesResponse.slice(0, 5).map((raffle: any) => ({
+        id: raffle.id,
+        title: raffle.title,
+        ticketsSold: raffle.sold_tickets || 0,
+        totalTickets: raffle.total_tickets || 0,
+        revenue: raffle.revenue || 0,
+        participants: raffle.sold_tickets || 0,
+        status: raffle.status
+      }));
+      setTopRaffles(formattedTopRaffles);
     } catch (error) {
       console.error('Erro ao carregar dados dos relatórios:', error);
     } finally {
