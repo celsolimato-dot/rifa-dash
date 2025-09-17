@@ -1,198 +1,197 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ClientRaffle {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  image: string;
-  numbers: number[];
-  drawDate: string;
-  totalNumbers: number;
-  soldNumbers: number;
+  prize: string;
+  prizeValue: number;
   ticketPrice: number;
-  status: 'ativa' | 'finalizada' | 'cancelada';
+  totalTickets: number;
+  soldTickets: number;
+  drawDate: string;
+  status: string;
   category: string;
-  winnerNumber?: number;
-  result?: 'ganhou' | 'perdeu';
+  imageUrl?: string;
+  userTickets?: string[];
+  userTicketCount: number;
 }
 
 export class ClientRafflesService {
+  
   static async getActiveRaffles(userId: string): Promise<ClientRaffle[]> {
     try {
-      // Buscar rifas ativas onde o usuário tem participação
-      const { data: participations, error: participationsError } = await supabase
-        .from('participacoes')
-        .select(`
-          numeros_escolhidos,
-          rifas (
-            id,
-            titulo,
-            descricao,
-            imagem_url,
-            data_sorteio,
-            total_numeros,
-            preco_numero,
-            status,
-            categoria
-          )
-        `)
-        .eq('usuario_id', userId)
-        .eq('rifas.status', 'ativa');
-
-      if (participationsError) throw participationsError;
-
-      // Buscar números vendidos para cada rifa
-      const raffleIds = participations?.map(p => p.rifas.id) || [];
-      const { data: soldNumbers, error: soldError } = await supabase
-        .from('participacoes')
-        .select('rifa_id, numeros_escolhidos')
-        .in('rifa_id', raffleIds);
-
-      if (soldError) throw soldError;
-
-      // Processar dados
-      const activeRaffles: ClientRaffle[] = participations?.map(participation => {
-        const raffle = participation.rifas;
-        const soldCount = soldNumbers
-          ?.filter(s => s.rifa_id === raffle.id)
-          .reduce((acc, s) => acc + (s.numeros_escolhidos?.length || 0), 0) || 0;
-
-        return {
-          id: raffle.id,
-          title: raffle.titulo,
-          description: raffle.descricao,
-          image: raffle.imagem_url || '/api/placeholder/300/200',
-          numbers: participation.numeros_escolhidos || [],
-          drawDate: raffle.data_sorteio,
-          totalNumbers: raffle.total_numeros,
-          soldNumbers: soldCount,
-          ticketPrice: raffle.preco_numero,
-          status: 'ativa',
-          category: raffle.categoria || 'Geral'
-        };
-      }) || [];
-
-      return activeRaffles;
-    } catch (error) {
-      console.error('Erro ao buscar rifas ativas:', error);
-      return [];
-    }
-  }
-
-  static async getFinishedRaffles(userId: string): Promise<ClientRaffle[]> {
-    try {
-      // Buscar rifas finalizadas onde o usuário participou
-      const { data: participations, error: participationsError } = await supabase
-        .from('participacoes')
-        .select(`
-          numeros_escolhidos,
-          rifas (
-            id,
-            titulo,
-            descricao,
-            imagem_url,
-            data_sorteio,
-            total_numeros,
-            preco_numero,
-            status,
-            categoria,
-            numero_vencedor
-          )
-        `)
-        .eq('usuario_id', userId)
-        .in('rifas.status', ['finalizada', 'cancelada']);
-
-      if (participationsError) throw participationsError;
-
-      // Buscar números vendidos para cada rifa
-      const raffleIds = participations?.map(p => p.rifas.id) || [];
-      const { data: soldNumbers, error: soldError } = await supabase
-        .from('participacoes')
-        .select('rifa_id, numeros_escolhidos')
-        .in('rifa_id', raffleIds);
-
-      if (soldError) throw soldError;
-
-      // Processar dados
-      const finishedRaffles: ClientRaffle[] = participations?.map(participation => {
-        const raffle = participation.rifas;
-        const userNumbers = participation.numeros_escolhidos || [];
-        const soldCount = soldNumbers
-          ?.filter(s => s.rifa_id === raffle.id)
-          .reduce((acc, s) => acc + (s.numeros_escolhidos?.length || 0), 0) || 0;
-
-        // Verificar se ganhou
-        const won = raffle.numero_vencedor && userNumbers.includes(raffle.numero_vencedor);
-
-        return {
-          id: raffle.id,
-          title: raffle.titulo,
-          description: raffle.descricao,
-          image: raffle.imagem_url || '/api/placeholder/300/200',
-          numbers: userNumbers,
-          drawDate: raffle.data_sorteio,
-          totalNumbers: raffle.total_numeros,
-          soldNumbers: soldCount,
-          ticketPrice: raffle.preco_numero,
-          status: raffle.status as 'finalizada' | 'cancelada',
-          category: raffle.categoria || 'Geral',
-          winnerNumber: raffle.numero_vencedor,
-          result: won ? 'ganhou' : 'perdeu'
-        };
-      }) || [];
-
-      return finishedRaffles;
-    } catch (error) {
-      console.error('Erro ao buscar rifas finalizadas:', error);
-      return [];
-    }
-  }
-
-  static async getAllAvailableRaffles(): Promise<ClientRaffle[]> {
-    try {
-      // Buscar todas as rifas ativas disponíveis
+      // Get active raffles
       const { data: raffles, error: rafflesError } = await supabase
-        .from('rifas')
+        .from('raffles')
         .select('*')
-        .eq('status', 'ativa')
-        .order('data_sorteio', { ascending: true });
+        .eq('status', 'active')
+        .order('draw_date', { ascending: true });
 
       if (rafflesError) throw rafflesError;
 
-      // Buscar números vendidos para cada rifa
-      const raffleIds = raffles?.map(r => r.id) || [];
-      const { data: soldNumbers, error: soldError } = await supabase
-        .from('participacoes')
-        .select('rifa_id, numeros_escolhidos')
-        .in('rifa_id', raffleIds);
+      // Get user tickets for each raffle
+      const { data: userTickets, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('raffle_id, number')
+        .eq('buyer_email', userId)
+        .eq('status', 'sold');
 
-      if (soldError) throw soldError;
+      if (ticketsError) throw ticketsError;
 
-      // Processar dados
-      const availableRaffles: ClientRaffle[] = raffles?.map(raffle => {
-        const soldCount = soldNumbers
-          ?.filter(s => s.rifa_id === raffle.id)
-          .reduce((acc, s) => acc + (s.numeros_escolhidos?.length || 0), 0) || 0;
-
+      return raffles?.map(raffle => {
+        const tickets = userTickets?.filter(t => t.raffle_id === raffle.id) || [];
         return {
           id: raffle.id,
-          title: raffle.titulo,
-          description: raffle.descricao,
-          image: raffle.imagem_url || '/api/placeholder/300/200',
-          numbers: [], // Usuário ainda não participou
-          drawDate: raffle.data_sorteio,
-          totalNumbers: raffle.total_numeros,
-          soldNumbers: soldCount,
-          ticketPrice: raffle.preco_numero,
-          status: 'ativa',
-          category: raffle.categoria || 'Geral'
+          title: raffle.title,
+          description: raffle.description || '',
+          prize: raffle.prize,
+          prizeValue: raffle.prize_value,
+          ticketPrice: raffle.ticket_price,
+          totalTickets: raffle.total_tickets,
+          soldTickets: raffle.sold_tickets,
+          drawDate: raffle.draw_date,
+          status: raffle.status,
+          category: raffle.category,
+          imageUrl: raffle.image_url,
+          userTickets: tickets.map(t => t.number.toString()),
+          userTicketCount: tickets.length
         };
       }) || [];
-
-      return availableRaffles;
     } catch (error) {
-      console.error('Erro ao buscar rifas disponíveis:', error);
+      console.error('Error getting active raffles:', error);
       return [];
+    }
+  }
+
+  static async getCompletedRaffles(userId: string): Promise<ClientRaffle[]> {
+    try {
+      // Get completed raffles where user participated
+      const { data: userTickets, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('raffle_id, number')
+        .eq('buyer_email', userId)
+        .eq('status', 'sold');
+
+      if (ticketsError) throw ticketsError;
+
+      const raffleIds = [...new Set(userTickets?.map(t => t.raffle_id) || [])];
+
+      const { data: raffles, error: rafflesError } = await supabase
+        .from('raffles')
+        .select('*')
+        .in('id', raffleIds)
+        .eq('status', 'completed')
+        .order('draw_date', { ascending: false });
+
+      if (rafflesError) throw rafflesError;
+
+      return raffles?.map(raffle => {
+        const tickets = userTickets?.filter(t => t.raffle_id === raffle.id) || [];
+        return {
+          id: raffle.id,
+          title: raffle.title,
+          description: raffle.description || '',
+          prize: raffle.prize,
+          prizeValue: raffle.prize_value,
+          ticketPrice: raffle.ticket_price,
+          totalTickets: raffle.total_tickets,
+          soldTickets: raffle.sold_tickets,
+          drawDate: raffle.draw_date,
+          status: raffle.status,
+          category: raffle.category,
+          imageUrl: raffle.image_url,
+          userTickets: tickets.map(t => t.number.toString()),
+          userTicketCount: tickets.length
+        };
+      }) || [];
+    } catch (error) {
+      console.error('Error getting completed raffles:', error);
+      return [];
+    }
+  }
+
+  static async getFavoriteRaffles(userId: string): Promise<ClientRaffle[]> {
+    try {
+      // For now, return raffles where user has most tickets
+      const { data: userTickets, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('raffle_id, number')
+        .eq('buyer_email', userId)
+        .eq('status', 'sold');
+
+      if (ticketsError) throw ticketsError;
+
+      // Count tickets per raffle
+      const ticketCounts = userTickets?.reduce((acc, ticket) => {
+        acc[ticket.raffle_id] = (acc[ticket.raffle_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      // Get raffles with most tickets (favorites)
+      const favoriteRaffleIds = Object.entries(ticketCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10)
+        .map(([id]) => id);
+
+      if (favoriteRaffleIds.length === 0) return [];
+
+      const { data: raffles, error: rafflesError } = await supabase
+        .from('raffles')
+        .select('*')
+        .in('id', favoriteRaffleIds);
+
+      if (rafflesError) throw rafflesError;
+
+      return raffles?.map(raffle => {
+        const tickets = userTickets?.filter(t => t.raffle_id === raffle.id) || [];
+        return {
+          id: raffle.id,
+          title: raffle.title,
+          description: raffle.description || '',
+          prize: raffle.prize,
+          prizeValue: raffle.prize_value,
+          ticketPrice: raffle.ticket_price,
+          totalTickets: raffle.total_tickets,
+          soldTickets: raffle.sold_tickets,
+          drawDate: raffle.draw_date,
+          status: raffle.status,
+          category: raffle.category,
+          imageUrl: raffle.image_url,
+          userTickets: tickets.map(t => t.number.toString()),
+          userTicketCount: tickets.length
+        };
+      }) || [];
+    } catch (error) {
+      console.error('Error getting favorite raffles:', error);
+      return [];
+    }
+  }
+
+  static async purchaseTickets(raffleId: string, ticketNumbers: number[], userInfo: any): Promise<boolean> {
+    try {
+      // Insert tickets
+      const tickets = ticketNumbers.map(number => ({
+        raffle_id: raffleId,
+        number: number,
+        buyer_name: userInfo.name,
+        buyer_email: userInfo.email,
+        buyer_phone: userInfo.phone,
+        status: 'sold',
+        payment_status: 'pending',
+        purchase_date: new Date().toISOString()
+      }));
+
+      const { error } = await supabase
+        .from('tickets')
+        .insert(tickets);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Error purchasing tickets:', error);
+      return false;
     }
   }
 }

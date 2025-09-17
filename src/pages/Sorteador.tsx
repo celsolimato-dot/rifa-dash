@@ -112,20 +112,31 @@ export default function Sorteador() {
     
     // Select random winner
     const winnerTicket = tickets[Math.floor(Math.random() * tickets.length)];
-    const winner = {
+    const winner: any = {
+      id: winnerTicket.buyer_email,
       name: winnerTicket.buyer_name,
       email: winnerTicket.buyer_email,
-      ticketNumber: winnerTicket.number.toString()
+      phone: '',
+      city: '',
+      state: '',
+      registration_date: '',
+      total_tickets: 0,
+      total_spent: 0,
+      raffles_participated: 0,
+      wins: 0,
+      status: 'active',
+      last_activity: '',
+      ticketNumbers: [winnerTicket.number.toString()]
     };
     
     if (winner) {
       const result: DrawResult = {
-        winnerTicket: winner.ticketNumber,
+        winnerTicket: winnerTicket.number.toString(),
         winner: winner,
         timestamp: new Date().toISOString()
       };
       
-      setCurrentNumber(winner.ticketNumber);
+      setCurrentNumber(winnerTicket.number.toString());
       setDrawResult(result);
       setShowConfetti(true);
     }

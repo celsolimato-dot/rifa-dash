@@ -1,222 +1,182 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface Transaction {
-  id: number;
-  type: 'participacao' | 'premio' | 'reembolso';
-  title: string;
-  description: string;
-  date: string;
-  amount: number;
-  status: 'concluida' | 'pendente' | 'recebido' | 'cancelada';
-  raffleId: number;
+export interface ClientHistoryStats {
+  totalTickets: number;
+  totalSpent: number;
+  totalRaffles: number;
+  totalWins: number;
 }
 
-export interface Participation {
-  id: number;
+export interface ClientTransaction {
+  id: string;
   raffleTitle: string;
-  numbers: number[];
-  purchaseDate: string;
-  drawDate: string;
+  ticketNumbers: string[];
   amount: number;
-  status: 'ativa' | 'finalizada' | 'cancelada';
-  result?: 'ganhou' | 'perdeu';
-  winnerNumber?: number;
+  date: string;
+  status: 'pending' | 'approved' | 'cancelled';
 }
 
-export interface Prize {
-  id: number;
+export interface ClientPrize {
+  id: string;
   raffleTitle: string;
   prizeDescription: string;
-  winDate: string;
-  amount: number;
-  status: 'pendente' | 'recebido';
-  winnerNumber: number;
-  userNumbers: number[];
+  prizeValue: number;
+  winningNumber: string;
+  dateWon: string;
+  status: 'pending' | 'claimed' | 'delivered';
 }
 
 export class ClientHistoryService {
-  static async getTransactions(userId: string): Promise<Transaction[]> {
+  
+  static async getClientStats(userId: string): Promise<ClientHistoryStats> {
     try {
-      // Buscar participações (transações de compra)
-      const { data: participations, error: participationsError } = await supabase
-        .from('participacoes')
-        .select(`
-          id,
-          numeros_escolhidos,
-          created_at,
-          rifas (
-            id,
-            titulo,
-            preco_numero
-          )
-        `)
-        .eq('usuario_id', userId)
-        .order('created_at', { ascending: false });
+      // Get tickets count and total spent from tickets table
+      const { data: tickets, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('id, payment_status')
+        .eq('buyer_email', userId);
 
-      if (participationsError) throw participationsError;
+      if (ticketsError) throw ticketsError;
 
-      // Buscar prêmios ganhos
-      const { data: prizes, error: prizesError } = await supabase
-        .from('participacoes')
-        .select(`
-          id,
-          numeros_escolhidos,
-          rifas (
-            id,
-            titulo,
-            data_sorteio,
-            numero_vencedor,
-            premio_valor
-          )
-        `)
-        .eq('usuario_id', userId)
-        .not('rifas.numero_vencedor', 'is', null);
+      const totalTickets = tickets?.filter(t => t.payment_status === 'paid').length || 0;
+      const totalSpent = 0; // Calculate from ticket prices if needed
+      
+      // Get unique raffles participated
+      const { data: raffles, error: rafflesError } = await supabase
+        .from('raffles')
+        .select('id')
+        .in('id', tickets?.map(t => t.raffle_id) || []);
 
-      if (prizesError) throw prizesError;
+      if (rafflesError) throw rafflesError;
 
-      const transactions: Transaction[] = [];
+      const totalRaffles = raffles?.length || 0;
+      const totalWins = 0; // Calculate wins from testimonials or other source
 
-      // Processar participações
-      participations?.forEach(participation => {
-        const raffle = participation.rifas;
-        const numbersCount = participation.numeros_escolhidos?.length || 0;
-        const amount = numbersCount * raffle.preco_numero;
-
-        transactions.push({
-          id: participation.id,
-          type: 'participacao',
-          title: `Participação - ${raffle.titulo}`,
-          description: `Compra de ${numbersCount} número${numbersCount > 1 ? 's' : ''} (${participation.numeros_escolhidos?.join(', ')})`,
-          date: participation.created_at,
-          amount: -amount,
-          status: 'concluida',
-          raffleId: raffle.id
-        });
-      });
-
-      // Processar prêmios
-      prizes?.forEach(prize => {
-        const raffle = prize.rifas;
-        const userNumbers = prize.numeros_escolhidos || [];
-        const won = raffle.numero_vencedor && userNumbers.includes(raffle.numero_vencedor);
-
-        if (won) {
-          transactions.push({
-            id: prize.id + 10000, // Offset para evitar conflito de IDs
-            type: 'premio',
-            title: `Prêmio Ganho - ${raffle.titulo}`,
-            description: `Número sorteado: ${raffle.numero_vencedor}`,
-            date: raffle.data_sorteio,
-            amount: raffle.premio_valor || 0,
-            status: 'recebido',
-            raffleId: raffle.id
-          });
-        }
-      });
-
-      // Ordenar por data (mais recente primeiro)
-      return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return {
+        totalTickets,
+        totalSpent,
+        totalRaffles,
+        totalWins
+      };
     } catch (error) {
-      console.error('Erro ao buscar transações:', error);
+      console.error('Error getting client stats:', error);
+      return {
+        totalTickets: 0,
+        totalSpent: 0,
+        totalRaffles: 0,
+        totalWins: 0
+      };
+    }
+  }
+
+  static async getClientTransactions(userId: string, page: number = 1, limit: number = 10): Promise<ClientTransaction[]> {
+    try {
+      const { data: tickets, error } = await supabase
+        .from('tickets')
+        .select(`
+          id,
+          number,
+          payment_status,
+          created_at,
+          raffles (
+            id,
+            title,
+            ticket_price
+          )
+        `)
+        .eq('buyer_email', userId)
+        .order('created_at', { ascending: false })
+        .range((page - 1) * limit, page * limit - 1);
+
+      if (error) throw error;
+
+      return tickets?.map(ticket => ({
+        id: ticket.id,
+        raffleTitle: ticket.raffles?.title || '',
+        ticketNumbers: [ticket.number.toString()],
+        amount: ticket.raffles?.ticket_price || 0,
+        date: ticket.created_at,
+        status: ticket.payment_status === 'paid' ? 'approved' : 'pending'
+      })) || [];
+    } catch (error) {
+      console.error('Error getting client transactions:', error);
       return [];
     }
   }
 
-  static async getParticipations(userId: string): Promise<Participation[]> {
+  static async getClientPrizes(userId: string, page: number = 1, limit: number = 10): Promise<ClientPrize[]> {
     try {
-      const { data: participations, error } = await supabase
-        .from('participacoes')
+      // Get winning testimonials for this user
+      const { data: testimonials, error } = await supabase
+        .from('testimonials')
         .select(`
           id,
-          numeros_escolhidos,
+          content,
+          winning_number,
           created_at,
-          rifas (
-            id,
-            titulo,
-            data_sorteio,
-            preco_numero,
-            status,
-            numero_vencedor
-          )
+          raffle_id
         `)
-        .eq('usuario_id', userId)
-        .order('created_at', { ascending: false });
+        .eq('user_id', userId)
+        .eq('type', 'winner')
+        .order('created_at', { ascending: false })
+        .range((page - 1) * limit, page * limit - 1);
 
       if (error) throw error;
 
-      return participations?.map(participation => {
-        const raffle = participation.rifas;
-        const userNumbers = participation.numeros_escolhidos || [];
-        const amount = userNumbers.length * raffle.preco_numero;
-        
-        let result: 'ganhou' | 'perdeu' | undefined;
-        if (raffle.status === 'finalizada' && raffle.numero_vencedor) {
-          result = userNumbers.includes(raffle.numero_vencedor) ? 'ganhou' : 'perdeu';
-        }
+      // Get raffle details for each testimonial
+      const raffleIds = testimonials?.map(t => t.raffle_id) || [];
+      const { data: raffles } = await supabase
+        .from('raffles')
+        .select('id, title, prize, prize_value')
+        .in('id', raffleIds);
 
+      return testimonials?.map(testimonial => {
+        const raffle = raffles?.find(r => r.id === testimonial.raffle_id);
         return {
-          id: participation.id,
-          raffleTitle: raffle.titulo,
-          numbers: userNumbers,
-          purchaseDate: participation.created_at,
-          drawDate: raffle.data_sorteio,
-          amount,
-          status: raffle.status as 'ativa' | 'finalizada' | 'cancelada',
-          result,
-          winnerNumber: raffle.numero_vencedor
+          id: testimonial.id,
+          raffleTitle: raffle?.title || '',
+          prizeDescription: raffle?.prize || '',
+          prizeValue: raffle?.prize_value || 0,
+          winningNumber: testimonial.winning_number || '',
+          dateWon: testimonial.created_at,
+          status: 'pending' as const
         };
       }) || [];
     } catch (error) {
-      console.error('Erro ao buscar participações:', error);
+      console.error('Error getting client prizes:', error);
       return [];
     }
   }
 
-  static async getPrizes(userId: string): Promise<Prize[]> {
+  static async getMonthlyStats(userId: string, year: number): Promise<any[]> {
     try {
-      const { data: prizes, error } = await supabase
-        .from('participacoes')
-        .select(`
-          id,
-          numeros_escolhidos,
-          rifas (
-            id,
-            titulo,
-            descricao,
-            data_sorteio,
-            numero_vencedor,
-            premio_valor
-          )
-        `)
-        .eq('usuario_id', userId)
-        .not('rifas.numero_vencedor', 'is', null);
+      const { data: tickets, error } = await supabase
+        .from('tickets')
+        .select('created_at, payment_status')
+        .eq('buyer_email', userId)
+        .gte('created_at', `${year}-01-01`)
+        .lt('created_at', `${year + 1}-01-01`)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const wonPrizes: Prize[] = [];
+      // Group by month
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        tickets: 0,
+        amount: 0
+      }));
 
-      prizes?.forEach(prize => {
-        const raffle = prize.rifas;
-        const userNumbers = prize.numeros_escolhidos || [];
-        const won = raffle.numero_vencedor && userNumbers.includes(raffle.numero_vencedor);
-
-        if (won) {
-          wonPrizes.push({
-            id: prize.id,
-            raffleTitle: raffle.titulo,
-            prizeDescription: raffle.descricao,
-            winDate: raffle.data_sorteio,
-            amount: raffle.premio_valor || 0,
-            status: 'recebido', // Por simplicidade, assumindo que todos foram recebidos
-            winnerNumber: raffle.numero_vencedor,
-            userNumbers
-          });
+      tickets?.forEach(ticket => {
+        if (ticket.payment_status === 'paid') {
+          const month = new Date(ticket.created_at).getMonth();
+          monthlyData[month].tickets += 1;
         }
       });
 
-      return wonPrizes.sort((a, b) => new Date(b.winDate).getTime() - new Date(a.winDate).getTime());
+      return monthlyData;
     } catch (error) {
-      console.error('Erro ao buscar prêmios:', error);
+      console.error('Error getting monthly stats:', error);
       return [];
     }
   }

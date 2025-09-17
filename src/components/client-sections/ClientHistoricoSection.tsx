@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientHistoryService, Transaction, Participation, Prize } from '@/services/clientHistoryService';
+import { ClientHistoryService, ClientTransaction, ClientPrize } from '@/services/clientHistoryService';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Search,
@@ -36,9 +36,9 @@ export const ClientHistoricoSection: React.FC = () => {
     try {
       setIsLoading(true);
       const [transactionsData, participationsData, prizesData] = await Promise.all([
-        ClientHistoryService.getTransactions(user!.id),
-        ClientHistoryService.getParticipations(user!.id),
-        ClientHistoryService.getPrizes(user!.id)
+        ClientHistoryService.getClientTransactions(user!.id),
+        ClientHistoryService.getClientTransactions(user!.id), // Reuse for now
+        ClientHistoryService.getClientPrizes(user!.id)
       ]);
       
       setTransactions(transactionsData);
