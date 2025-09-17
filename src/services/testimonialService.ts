@@ -1,6 +1,4 @@
-import { supabase } from '../lib/supabase';
-import { config } from '../lib/config';
-import { mockTestimonials, simulateNetworkDelay } from '../lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Testimonial {
   id: string;
@@ -23,13 +21,6 @@ export interface Testimonial {
 
 export class TestimonialService {
   async getAllTestimonials(): Promise<Testimonial[]> {
-    // Modo de desenvolvimento - usar dados mock
-    if (config.isDevelopment) {
-      await simulateNetworkDelay(300);
-      return mockTestimonials.filter(testimonial => testimonial.status === 'approved');
-    }
-
-    // Modo de produção - usar Supabase
     const { data, error } = await supabase
       .from('testimonials')
       .select(`
@@ -58,7 +49,7 @@ export class TestimonialService {
       userId: item.user_id,
       raffleId: item.raffle_id,
       rating: item.rating,
-      status: item.status,
+      status: item.status as 'pending' | 'approved' | 'rejected',
       createdAt: item.created_at,
       updatedAt: item.updated_at
     }));
@@ -94,7 +85,7 @@ export class TestimonialService {
       userId: data.user_id,
       raffleId: data.raffle_id,
       rating: data.rating,
-      status: data.status,
+      status: data.status as 'pending' | 'approved' | 'rejected',
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
@@ -190,7 +181,7 @@ export class TestimonialService {
       userId: item.user_id,
       raffleId: item.raffle_id,
       rating: item.rating,
-      status: item.status,
+      status: item.status as 'pending' | 'approved' | 'rejected',
       createdAt: item.created_at,
       updatedAt: item.updated_at
     }));
