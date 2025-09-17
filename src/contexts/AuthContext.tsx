@@ -12,12 +12,19 @@ export interface User {
   avatar?: string;
 }
 
+interface RegisterData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  register: (userData: Omit<User, 'id'> & { password: string }) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<void> => {
+  const register = async (userData: RegisterData): Promise<void> => {
     setIsLoading(true);
     try {
       const { user, error } = await AuthService.register(userData);

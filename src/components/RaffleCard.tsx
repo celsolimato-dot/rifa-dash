@@ -14,16 +14,18 @@ interface RaffleData {
   title: string;
   description?: string;
   image: string;
-  price: number;
+  prize: string;
+  prizeValue: number;
+  ticketPrice: number;
   totalTickets: number;
   soldTickets: number;
-  drawDate: string;
+  drawDate: string | Date;
   timeLeft?: string;
   status?: string;
   featured?: boolean;
   institution?: string;
   rules?: string;
-  prizeValue?: number;
+  imageUrl?: string;
 }
 
 interface RaffleCardProps {
@@ -33,18 +35,20 @@ interface RaffleCardProps {
   // Props individuais (para compatibilidade)
   id?: string;
   title?: string;
+  prize?: string;
+  prizeValue?: number;
+  ticketPrice?: number;
   description?: string;
   image?: string;
-  price?: number;
+  imageUrl?: string;
   totalTickets?: number;
   soldTickets?: number;
-  drawDate?: string;
+  drawDate?: string | Date;
   timeLeft?: string;
   status?: string;
   featured?: boolean;
   institution?: string;
   rules?: string;
-  prizeValue?: number;
 }
 
 export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
@@ -52,9 +56,11 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
   const raffleData = props.raffle || {
     id: props.id || '',
     title: props.title || '',
+    prize: props.prize || '',
+    prizeValue: props.prizeValue || 0,
+    ticketPrice: props.ticketPrice || 0,
     description: props.description,
-    image: props.image || '',
-    price: props.price || 0,
+    image: props.image || props.imageUrl || '',
     totalTickets: props.totalTickets || 0,
     soldTickets: props.soldTickets || 0,
     drawDate: props.drawDate || '',
@@ -63,15 +69,16 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
     featured: props.featured || false,
     institution: props.institution,
     rules: props.rules,
-    prizeValue: props.prizeValue
   };
 
   const {
     id,
     title,
+    prize,
+    prizeValue,
+    ticketPrice,
     description,
     image, 
-    price, 
     totalTickets, 
     soldTickets, 
     drawDate, 
@@ -80,7 +87,6 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
     featured = false,
     institution,
     rules,
-    prizeValue
   } = raffleData;
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,9 +94,13 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   // Validações para evitar erros
-  const safePrice = typeof price === 'number' ? price : 0;
+  const safeTicketPrice = typeof ticketPrice === 'number' ? ticketPrice : 0;
   const safeTotalTickets = typeof totalTickets === 'number' ? totalTickets : 0;
   const safeSoldTickets = typeof soldTickets === 'number' ? soldTickets : 0;
+  const safePrizeValue = typeof prizeValue === 'number' ? prizeValue : 0;
+  
+  // Converter drawDate para string se for Date
+  const drawDateString = drawDate instanceof Date ? drawDate.toLocaleDateString('pt-BR') : drawDate;
   
   const progress = safeTotalTickets > 0 ? (safeSoldTickets / safeTotalTickets) * 100 : 0;
   const remainingTickets = safeTotalTickets - safeSoldTickets;
@@ -158,7 +168,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           </h3>
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-accent-gold">
-              R$ {safePrice.toFixed(2).replace('.', ',')}
+              R$ {safeTicketPrice.toFixed(2).replace('.', ',')}
             </span>
             <span className="text-sm text-foreground-muted">por número</span>
           </div>
@@ -183,7 +193,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
         {/* Draw Date */}
         <div className="flex items-center text-sm text-foreground-muted">
           <Calendar className="w-4 h-4 mr-2 text-primary" />
-          Sorteio em: <span className="font-medium ml-1">{drawDate}</span>
+          Sorteio em: <span className="font-medium ml-1">{drawDateString}</span>
         </div>
         
         {/* Action Buttons */}
@@ -209,10 +219,10 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           id: id || '',
           title: title || '',
           image: image || '',
-          price: safePrice,
+          price: safeTicketPrice,
           totalTickets: safeTotalTickets,
           soldTickets: safeSoldTickets,
-          drawDate: drawDate || ''
+          drawDate: drawDateString || ''
         }}
       />
 
@@ -233,16 +243,16 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           title: title || '',
           description,
           image: image || '',
-          price: safePrice,
+          price: safeTicketPrice,
+          prizeValue: safePrizeValue,
           totalTickets: safeTotalTickets,
           soldTickets: safeSoldTickets,
-          drawDate: drawDate || '',
+          drawDate: drawDateString || '',
           timeLeft,
           status,
           featured,
           institution,
           rules,
-          prizeValue
         }}
       />
     </div>

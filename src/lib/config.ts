@@ -26,13 +26,9 @@ export const isDevelopmentMode = () => {
 };
 
 export const config = {
-  // Modo automático: usa Supabase se configurado, senão usa dados mock
-  isDevelopment: isDevelopmentMode(),
+  isDevelopment: true,
   supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL,
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    url: import.meta.env.VITE_SUPABASE_URL || '',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
   },
-  abacatePay: {
-    token: import.meta.env.VITE_ABACATEPAY_TOKEN,
-  }
 };

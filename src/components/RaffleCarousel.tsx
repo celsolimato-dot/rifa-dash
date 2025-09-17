@@ -112,7 +112,19 @@ const RaffleCarousel = () => {
                 className="animate-slide-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <RaffleCard {...raffle} />
+                <RaffleCard 
+                  id={raffle.id}
+                  title={raffle.title}
+                  prize={raffle.prize}
+                  prizeValue={raffle.prizeValue}
+                  ticketPrice={raffle.ticketPrice}
+                  totalTickets={raffle.totalTickets}
+                  soldTickets={raffle.soldTickets}
+                  drawDate={raffle.drawDate}
+                  status={raffle.status}
+                  description={raffle.description}
+                  image={raffle.imageUrl || prizeCarImage}
+                />
               </div>
             ))}
           </div>
@@ -126,7 +138,19 @@ const RaffleCarousel = () => {
               >
                 {raffles.map((raffle) => (
                   <div key={raffle.id} className="w-full flex-shrink-0 px-2">
-                    <RaffleCard {...raffle} />
+                    <RaffleCard 
+                      id={raffle.id}
+                      title={raffle.title}
+                      prize={raffle.prize}
+                      prizeValue={raffle.prizeValue}
+                      ticketPrice={raffle.ticketPrice}
+                      totalTickets={raffle.totalTickets}
+                      soldTickets={raffle.soldTickets}
+                      drawDate={raffle.drawDate}
+                      status={raffle.status}
+                      description={raffle.description}
+                      image={raffle.imageUrl || prizeCarImage}
+                    />
                   </div>
                 ))}
               </div>

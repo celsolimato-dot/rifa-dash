@@ -1,13 +1,44 @@
-import { createClient } from '@supabase/supabase-js'
+// Mock Supabase client for development
+const mockSupabaseClient = {
+  auth: {
+    signInWithPassword: () => Promise.resolve({ data: null, error: null }),
+    signUp: () => Promise.resolve({ data: null, error: null }),
+    signOut: () => Promise.resolve({ error: null }),
+    getUser: () => Promise.resolve({ data: null, error: null }),
+    admin: {
+      deleteUser: () => Promise.resolve({ error: null })
+    }
+  },
+  from: () => ({
+    select: () => ({ 
+      eq: () => ({ 
+        single: () => Promise.resolve({ data: null, error: null }),
+        order: () => Promise.resolve({ data: [], error: null }),
+        limit: () => Promise.resolve({ data: [], error: null })
+      }),
+      gte: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+      lte: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+      order: () => Promise.resolve({ data: [], error: null })
+    }),
+    insert: () => ({ 
+      select: () => ({ 
+        single: () => Promise.resolve({ data: null, error: null }) 
+      })
+    }),
+    update: () => ({ 
+      eq: () => ({ 
+        select: () => ({ 
+          single: () => Promise.resolve({ data: null, error: null }) 
+        }) 
+      }) 
+    }),
+    delete: () => ({ 
+      eq: () => Promise.resolve({ error: null }) 
+    })
+  })
+};
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = mockSupabaseClient;
 
 // Database Types
 export interface Database {

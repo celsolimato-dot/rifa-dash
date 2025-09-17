@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase'
-import type { User } from '../contexts/AuthContext'
+import { simulateNetworkDelay } from '../lib/mockData'
 
 export interface LoginCredentials {
   email: string
@@ -11,46 +10,56 @@ export interface RegisterData {
   email: string
   phone: string
   password: string
-  city?: string
-  state?: string
+}
+
+interface MockUser {
+  id: string
+  name: string
+  email: string
+  phone: string
+  role: 'admin' | 'client'
+}
+
+// Mock users for development
+const mockUsers: MockUser[] = [
+  {
+    id: '1',
+    name: 'Admin',
+    email: 'admin@rifou.net',
+    phone: '(11) 99999-9999',
+    role: 'admin'
+  },
+  {
+    id: '2', 
+    name: 'Cliente Teste',
+    email: 'cliente@teste.com',
+    phone: '(11) 88888-8888',
+    role: 'client'
+  }
+]
+
+// Mock passwords (in real app, these would be hashed)
+const mockPasswords: { [email: string]: string } = {
+  'admin@rifou.net': 'admin123',
+  'cliente@teste.com': 'cliente123'
 }
 
 export class AuthService {
-  static async login(credentials: LoginCredentials): Promise<{ user: User | null; error: string | null }> {
+  static async login(credentials: LoginCredentials): Promise<{ user: any | null; error: string | null }> {
     try {
-      // Autenticar com Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      })
-
-      if (authError) {
-        return { user: null, error: authError.message }
+      await simulateNetworkDelay(1000)
+      
+      const user = mockUsers.find(u => u.email === credentials.email)
+      const password = mockPasswords[credentials.email]
+      
+      if (!user || password !== credentials.password) {
+        return { user: null, error: 'Email ou senha inválidos' }
       }
-
-      if (!authData.user) {
-        return { user: null, error: 'Usuário não encontrado' }
-      }
-
-      // Buscar dados do usuário na tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single()
-
-      if (userError) {
-        return { user: null, error: 'Erro ao carregar dados do usuário' }
-      }
-
-      const user: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role,
-      }
-
+      
+      // Save to localStorage
+      localStorage.setItem('auth_user', JSON.stringify(user))
+      localStorage.setItem('auth_token', 'mock-token-' + user.id)
+      
       return { user, error: null }
     } catch (error) {
       console.error('Erro no login:', error)
@@ -58,53 +67,33 @@ export class AuthService {
     }
   }
 
-  static async register(data: RegisterData): Promise<{ user: User | null; error: string | null }> {
+  static async register(data: RegisterData): Promise<{ user: any | null; error: string | null }> {
     try {
-      // Registrar com Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      await simulateNetworkDelay(1000)
+      
+      // Check if user already exists
+      const existingUser = mockUsers.find(u => u.email === data.email)
+      if (existingUser) {
+        return { user: null, error: 'Email já cadastrado' }
+      }
+      
+      // Create new user
+      const newUser: MockUser = {
+        id: String(mockUsers.length + 1),
+        name: data.name,
         email: data.email,
-        password: data.password,
-      })
-
-      if (authError) {
-        return { user: null, error: authError.message }
+        phone: data.phone,
+        role: 'client'
       }
-
-      if (!authData.user) {
-        return { user: null, error: 'Erro ao criar usuário' }
-      }
-
-      // Criar registro na tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          role: 'client',
-          city: data.city,
-          state: data.state,
-          status: 'active',
-        })
-        .select()
-        .single()
-
-      if (userError) {
-        // Se falhar ao criar o usuário, deletar da auth
-        await supabase.auth.admin.deleteUser(authData.user.id)
-        return { user: null, error: 'Erro ao criar perfil do usuário' }
-      }
-
-      const user: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role,
-      }
-
-      return { user, error: null }
+      
+      mockUsers.push(newUser)
+      mockPasswords[data.email] = data.password
+      
+      // Save to localStorage
+      localStorage.setItem('auth_user', JSON.stringify(newUser))
+      localStorage.setItem('auth_token', 'mock-token-' + newUser.id)
+      
+      return { user: newUser, error: null }
     } catch (error) {
       console.error('Erro no registro:', error)
       return { user: null, error: 'Erro interno do servidor' }
@@ -113,41 +102,25 @@ export class AuthService {
 
   static async logout(): Promise<{ error: string | null }> {
     try {
-      const { error } = await supabase.auth.signOut()
-      return { error: error?.message || null }
+      localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_token')
+      return { error: null }
     } catch (error) {
       console.error('Erro no logout:', error)
       return { error: 'Erro interno do servidor' }
     }
   }
 
-  static async getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
+  static async getCurrentUser(): Promise<{ user: any | null; error: string | null }> {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser()
-
-      if (authError || !authData.user) {
+      const userStr = localStorage.getItem('auth_user')
+      const token = localStorage.getItem('auth_token')
+      
+      if (!userStr || !token) {
         return { user: null, error: null }
       }
-
-      // Buscar dados do usuário na tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single()
-
-      if (userError) {
-        return { user: null, error: 'Erro ao carregar dados do usuário' }
-      }
-
-      const user: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role,
-      }
-
+      
+      const user = JSON.parse(userStr)
       return { user, error: null }
     } catch (error) {
       console.error('Erro ao obter usuário atual:', error)
@@ -155,34 +128,19 @@ export class AuthService {
     }
   }
 
-  static async updateProfile(userId: string, updates: Partial<RegisterData>): Promise<{ user: User | null; error: string | null }> {
+  static async updateProfile(userId: string, updates: Partial<RegisterData>): Promise<{ user: any | null; error: string | null }> {
     try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .update({
-          name: updates.name,
-          phone: updates.phone,
-          city: updates.city,
-          state: updates.state,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-        .select()
-        .single()
-
-      if (userError) {
-        return { user: null, error: 'Erro ao atualizar perfil' }
+      const userStr = localStorage.getItem('auth_user')
+      if (!userStr) {
+        return { user: null, error: 'Usuário não encontrado' }
       }
-
-      const user: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role,
-      }
-
-      return { user, error: null }
+      
+      const user = JSON.parse(userStr)
+      const updatedUser = { ...user, ...updates }
+      
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser))
+      
+      return { user: updatedUser, error: null }
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error)
       return { user: null, error: 'Erro interno do servidor' }
@@ -191,11 +149,15 @@ export class AuthService {
 
   static async changePassword(newPassword: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-
-      return { error: error?.message || null }
+      const userStr = localStorage.getItem('auth_user')
+      if (!userStr) {
+        return { error: 'Usuário não encontrado' }
+      }
+      
+      const user = JSON.parse(userStr)
+      mockPasswords[user.email] = newPassword
+      
+      return { error: null }
     } catch (error) {
       console.error('Erro ao alterar senha:', error)
       return { error: 'Erro interno do servidor' }
