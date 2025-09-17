@@ -118,7 +118,7 @@ USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 
 -- Leitura: Usuários podem ver seus próprios bilhetes
 CREATE POLICY "Usuários podem ver seus próprios bilhetes"
 ON tickets FOR SELECT TO authenticated
-USING (user_id = auth.uid());
+USING (buyer_email = (SELECT email FROM users WHERE id = auth.uid()));
 
 -- Leitura: Admins podem ver todos os bilhetes
 CREATE POLICY "Admins podem ver todos os bilhetes"
@@ -134,7 +134,7 @@ USING (true);
 CREATE POLICY "Usuários podem comprar bilhetes"
 ON tickets FOR INSERT TO authenticated
 WITH CHECK (
-  user_id = auth.uid() AND
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
   EXISTS (SELECT 1 FROM raffles WHERE raffles.id = raffle_id AND raffles.status = 'active')
 );
 
@@ -146,8 +146,8 @@ WITH CHECK (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.ro
 -- Atualização: Usuários podem atualizar seus próprios bilhetes
 CREATE POLICY "Usuários podem atualizar seus próprios bilhetes"
 ON tickets FOR UPDATE TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+USING (buyer_email = (SELECT email FROM users WHERE id = auth.uid()))
+WITH CHECK (buyer_email = (SELECT email FROM users WHERE id = auth.uid()));
 
 -- Atualização: Admins podem atualizar qualquer bilhete
 CREATE POLICY "Admins podem atualizar qualquer bilhete"
@@ -159,7 +159,7 @@ WITH CHECK (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.ro
 CREATE POLICY "Usuários podem cancelar seus próprios bilhetes"
 ON tickets FOR DELETE TO authenticated
 USING (
-  user_id = auth.uid() AND
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
   EXISTS (SELECT 1 FROM raffles WHERE raffles.id = raffle_id AND raffles.status = 'active')
 );
 
@@ -335,15 +335,16 @@ CREATE TRIGGER auto_moderate_testimonial_trigger
 -- VIEWS PÚBLICAS
 -- =====================================================
 
--- View para estatísticas de bilhetes
+-- View para estatísticas públicas de tickets
 CREATE OR REPLACE VIEW public_ticket_stats AS
 SELECT 
   raffle_id,
   COUNT(*) as total_sold,
-  COUNT(DISTINCT user_id) as unique_buyers,
+  COUNT(DISTINCT buyer_email) as unique_buyers,
   MIN(created_at) as first_sale,
   MAX(created_at) as last_sale
-FROM tickets
+FROM tickets 
+WHERE status = 'sold'
 GROUP BY raffle_id;
 
 -- View para informações públicas dos usuários

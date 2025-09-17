@@ -18,7 +18,7 @@ ON tickets
 FOR SELECT
 TO authenticated
 USING (
-  user_id = auth.uid()
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid())
 );
 
 -- Política: Admins podem ver todos os bilhetes
@@ -54,7 +54,7 @@ FOR INSERT
 TO authenticated
 WITH CHECK (
   -- Usuário só pode inserir bilhetes para si mesmo
-  user_id = auth.uid() AND
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
   -- Verificar se a rifa está ativa
   EXISTS (
     SELECT 1 FROM raffles 
@@ -86,14 +86,14 @@ ON tickets
 FOR UPDATE
 TO authenticated
 USING (
-  user_id = auth.uid() AND
-  -- Não permitir alterar dados críticos
-  user_id = auth.uid()
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
+  -- Só permite atualizar se o ticket ainda não foi finalizado
+  payment_status IN ('pending', 'reserved')
 )
 WITH CHECK (
-  user_id = auth.uid() AND
-  -- Garantir que não alterem campos críticos
-  user_id = auth.uid()
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
+  -- Não permite alterar o buyer_email para outro usuário
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid())
 );
 
 -- Política: Admins podem atualizar qualquer bilhete
@@ -126,7 +126,7 @@ ON tickets
 FOR DELETE
 TO authenticated
 USING (
-  user_id = auth.uid() AND
+  buyer_email = (SELECT email FROM users WHERE id = auth.uid()) AND
   -- Verificar se a rifa ainda permite cancelamento
   EXISTS (
     SELECT 1 FROM raffles 
@@ -158,7 +158,7 @@ CREATE OR REPLACE VIEW public_ticket_stats AS
 SELECT 
   raffle_id,
   COUNT(*) as total_sold,
-  COUNT(DISTINCT user_id) as unique_buyers,
+  COUNT(DISTINCT buyer_email) as unique_buyers,
   MIN(created_at) as first_sale,
   MAX(created_at) as last_sale
 FROM tickets
@@ -198,11 +198,11 @@ ORDER BY policyname;
 -- SELECT * FROM tickets;
 
 -- 3. Tentar ver bilhetes de outro usuário (deve falhar):
--- SELECT * FROM tickets WHERE user_id != auth.uid();
+-- SELECT * FROM tickets WHERE buyer_email != (SELECT email FROM users WHERE id = auth.uid());
 
 -- 4. Comprar um bilhete (deve funcionar):
--- INSERT INTO tickets (raffle_id, user_id, ticket_number, phone, payment_status) 
--- VALUES (1, auth.uid(), 1, '11999999999', 'pending');
+-- INSERT INTO tickets (raffle_id, buyer_name, buyer_email, buyer_phone, ticket_number, payment_status) 
+-- VALUES (1, 'Nome do Comprador', 'email@exemplo.com', '11999999999', 1, 'pending');
 
 -- =====================================================
 -- NOTAS IMPORTANTES
