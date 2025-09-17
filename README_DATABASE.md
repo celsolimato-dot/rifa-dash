@@ -1,54 +1,118 @@
-# Configuração do Banco de Dados - Supabase
+# Configuração do Banco de Dados - Sistema de Rifas
 
-Este documento explica como configurar as tabelas necessárias no Supabase para o sistema de rifas.
+Este documento contém todas as instruções para configurar o banco de dados PostgreSQL no Supabase para o sistema de rifas.
 
-## 📋 Pré-requisitos
+## 📋 Estrutura do Banco de Dados
 
-1. Conta no [Supabase](https://supabase.com)
-2. Projeto criado no Supabase
-3. Acesso ao SQL Editor do Supabase
+### Tabelas Principais
 
-## 🚀 Configuração Rápida
+1. **users** - Gerenciamento de usuários
+2. **raffles** - Rifas disponíveis
+3. **tickets** - Bilhetes comprados
+4. **testimonials** - Depoimentos dos usuários
 
-### Opção 1: Setup Completo (Recomendado)
+## 🚀 Configuração Inicial
 
-Execute o arquivo `sql/setup_database.sql` no SQL Editor do Supabase. Este arquivo contém:
+### 1. Executar Scripts na Ordem
 
-- Todas as tabelas necessárias
-- Índices para performance
-- Triggers automáticos
-- Funções de negócio
-- Comentários de documentação
+Execute os scripts SQL na seguinte ordem no editor SQL do Supabase:
 
 ```sql
--- Copie e cole o conteúdo de sql/setup_database.sql no SQL Editor
+-- 1. Configuração inicial das tabelas
+\i sql/setup_database.sql
+
+-- 2. Criar tabela de rifas
+\i sql/01_create_raffles_table.sql
+
+-- 3. Criar tabela de bilhetes
+\i sql/02_create_tickets_table.sql
+
+-- 4. Criar tabela de depoimentos
+\i sql/03_create_testimonials_table.sql
+
+-- 5. Configurar usuário administrador
+\i sql/04_setup_admin_user.sql
+
+-- 6. CONFIGURAR SEGURANÇA (IMPORTANTE!)
+\i sql/setup_security.sql
 ```
 
-### 👤 Configuração do Usuário Administrador
+### 2. Configurar Administrador
 
-Após criar as tabelas, configure um usuário administrador:
-
-1. **Opção Rápida**: Execute `sql/configure_admin.sql`
-2. **Opção Detalhada**: Execute `sql/04_setup_admin_user.sql`
-
-**Passos:**
-1. Abra o arquivo `sql/configure_admin.sql`
-2. Substitua os dados de exemplo pelos seus dados reais
-3. Execute o script no SQL Editor do Supabase
-4. Verifique se o usuário admin foi criado corretamente
+Após executar os scripts, configure um usuário administrador:
 
 ```sql
--- Exemplo de verificação
-SELECT name, email, role FROM users WHERE role = 'admin';
+-- Execute o script de configuração do admin
+\i sql/configure_admin.sql
 ```
 
-### Opção 2: Setup Individual
+## 🔒 Configuração de Segurança (RLS)
 
-Se preferir executar os scripts separadamente:
+### Scripts de Segurança Disponíveis
 
-1. **Tabela de Rifas**: `sql/01_create_raffles_table.sql`
-2. **Tabela de Bilhetes**: `sql/02_create_tickets_table.sql`
-3. **Tabela de Depoimentos**: `sql/03_create_testimonials_table.sql`
+O sistema inclui configuração completa de Row Level Security (RLS):
+
+- `sql/05_security_raffles.sql` - Políticas para tabela raffles
+- `sql/06_security_tickets.sql` - Políticas para tabela tickets  
+- `sql/07_security_users.sql` - Políticas para tabela users
+- `sql/08_security_testimonials.sql` - Políticas para tabela testimonials
+- `sql/setup_security.sql` - **Script consolidado (RECOMENDADO)**
+
+### Execução Rápida de Segurança
+
+Para aplicar todas as configurações de segurança de uma vez:
+
+```sql
+-- Execute APENAS este script para configurar toda a segurança
+\i sql/setup_security.sql
+```
+
+### Políticas de Acesso Implementadas
+
+#### 🎫 Tabela Raffles
+- **Leitura**: Todos podem ver rifas ativas/concluídas
+- **Leitura Admin**: Admins veem todas as rifas
+- **Inserção**: Apenas admins podem criar rifas
+- **Atualização**: Apenas admins podem modificar rifas
+- **Exclusão**: Apenas admins podem deletar rifas
+
+#### 🎟️ Tabela Tickets
+- **Leitura**: Usuários veem seus bilhetes, admins veem todos
+- **Leitura Pública**: Estatísticas gerais são públicas
+- **Inserção**: Usuários podem comprar bilhetes de rifas ativas
+- **Atualização**: Usuários editam seus bilhetes, admins editam todos
+- **Exclusão**: Usuários cancelam seus bilhetes, admins deletam todos
+
+#### 👥 Tabela Users
+- **Leitura**: Usuários veem seu perfil, admins veem todos
+- **Leitura Pública**: Informações básicas são públicas
+- **Inserção**: Criação automática de perfil + admins criam qualquer
+- **Atualização**: Usuários editam seu perfil (exceto role)
+- **Exclusão**: Usuários deletam seu perfil, admins deletam não-admins
+
+#### 💬 Tabela Testimonials
+- **Leitura**: Depoimentos aprovados são públicos
+- **Leitura Privada**: Usuários veem seus depoimentos
+- **Inserção**: Usuários criam depoimentos (moderação automática)
+- **Atualização**: Usuários editam pendentes, admins moderam
+- **Exclusão**: Usuários deletam pendentes, admins deletam todos
+
+### Recursos de Segurança Adicionais
+
+#### 🔧 Funções Auxiliares
+- `is_admin()` - Verifica se usuário é administrador
+- `handle_new_user()` - Cria perfil automaticamente
+- `auto_moderate_testimonial()` - Moderação automática de depoimentos
+
+#### 👁️ Views Públicas
+- `public_ticket_stats` - Estatísticas de bilhetes por rifa
+- `public_user_info` - Informações básicas dos usuários
+- `public_testimonials` - Depoimentos aprovados com dados do usuário
+
+#### ⚡ Triggers Automáticos
+- Criação automática de perfil de usuário
+- Moderação automática de depoimentos (aprovação para rating ≥4)
+- Timestamps automáticos
 
 ## 📊 Estrutura das Tabelas
 
