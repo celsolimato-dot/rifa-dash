@@ -366,30 +366,8 @@ export default function Sorteador() {
                   <div>
                     <h4 className="font-medium mb-3">Participantes ({selectedRaffle.sold_tickets || 0})</h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground p-4 text-center border rounded-lg">
                         Funcionalidade temporariamente indisponível - dados sendo migrados para sistema real
-                      </div>
-                        <div 
-                          key={participant.id} 
-                          className={`
-                            flex justify-between items-center p-3 rounded-lg border
-                            ${drawResult?.winner.id === participant.id ? 
-                              'bg-green-50 border-green-200' : 'bg-muted/50'}
-                          `}
-                        >
-                          <div>
-                            <p className="font-medium text-sm">{participant.name}</p>
-                            <p className="text-xs text-foreground-muted">{participant.email}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">
-                              {participant.ticketNumbers.length} bilhete{participant.ticketNumbers.length > 1 ? 's' : ''}
-                            </p>
-                            <p className="text-xs text-foreground-muted">
-                              {participant.ticketNumbers.join(', ')}
-                            </p>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
