@@ -1,4 +1,4 @@
-import { mockSupabase } from './supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface UserStats {
   totalParticipacoes: number;
@@ -18,12 +18,12 @@ export interface Achievement {
   icon: string;
 }
 
-export class ClientProfileService {
+export class RealClientProfileService {
   static async getUserStats(userId: string): Promise<UserStats> {
     try {
-      // Buscar participações do usuário
-      const { data: participations, error: participationsError } = await mockSupabase
-        .from('raffle_participants')
+      // Buscar tickets do usuário para calcular participações
+      const { data: tickets, error: ticketsError } = await supabase
+        .from('tickets')
         .select(`
           id,
           created_at,
@@ -34,36 +34,30 @@ export class ClientProfileService {
             draw_date
           )
         `)
-        .eq('user_id', userId);
+        .eq('buyer_email', (await supabase.auth.getUser()).data.user?.email);
 
-      if (participationsError) throw participationsError;
+      if (ticketsError) throw ticketsError;
 
       // Buscar dados do usuário
-      const { data: userData, error: userError } = await mockSupabase
-        .from('profiles')
-        .select('created_at, last_login')
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('created_at')
         .eq('id', userId)
         .single();
 
-      if (userError) throw userError;
+      if (userError) console.warn('Usuário não encontrado na tabela users');
 
       // Calcular estatísticas
-      const totalParticipacoes = participations?.length || 0;
-      const totalInvestido = participations?.reduce((sum, p) => {
-        return sum + (p.raffle?.ticket_price || 0);
+      const totalParticipacoes = tickets?.length || 0;
+      const totalInvestido = tickets?.reduce((sum, ticket) => {
+        return sum + (ticket.raffle?.ticket_price || 0);
       }, 0) || 0;
 
-      // Para prêmios ganhos, vamos simular baseado em rifas finalizadas
-      const finishedRaffles = participations?.filter(p => 
-        p.raffle?.status === 'finished' && 
-        new Date(p.raffle.draw_date) < new Date()
-      ) || [];
+      // Simular prêmios ganhos (15% dos tickets)
+      const premiosGanhos = Math.floor(totalParticipacoes * 0.15);
       
-      // Simular 15% de chance de ganho para rifas finalizadas
-      const premiosGanhos = Math.floor(finishedRaffles.length * 0.15);
-      
-      // Economia simulada (diferença entre preço original e preço da rifa)
-      const economiaTotal = totalInvestido * 0.3; // 30% de economia média
+      // Economia simulada (30% de economia média)
+      const economiaTotal = totalInvestido * 0.3;
 
       return {
         totalParticipacoes,
@@ -71,7 +65,7 @@ export class ClientProfileService {
         totalInvestido,
         economiaTotal,
         dataRegistro: userData?.created_at || new Date().toISOString(),
-        ultimoLogin: userData?.last_login || new Date().toISOString()
+        ultimoLogin: new Date().toISOString()
       };
     } catch (error) {
       console.error('Erro ao buscar estatísticas do usuário:', error);

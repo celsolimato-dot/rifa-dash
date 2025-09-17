@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { TestimonialService, Testimonial } from '../services/testimonialService';
+import { RealTestimonialService, Testimonial } from '../services/realTestimonialService';
 
 export type { Testimonial };
 
 interface TestimonialsContextType {
   testimonials: Testimonial[];
   isLoading: boolean;
-  addTestimonial: (testimonial: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addTestimonial: (testimonial: Omit<Testimonial, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateTestimonial: (id: string, testimonial: Partial<Testimonial>) => Promise<void>;
   deleteTestimonial: (id: string) => Promise<void>;
   getTestimonial: (id: string) => Testimonial | undefined;
@@ -17,7 +17,7 @@ interface TestimonialsContextType {
 
 const TestimonialsContext = createContext<TestimonialsContextType | undefined>(undefined);
 
-const testimonialService = new TestimonialService();
+const testimonialService = new RealTestimonialService();
 
 export const TestimonialsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -39,7 +39,7 @@ export const TestimonialsProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  const addTestimonial = async (testimonial: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addTestimonial = async (testimonial: Omit<Testimonial, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       await testimonialService.createTestimonial(testimonial);
       await loadTestimonials(); // Recarregar lista
