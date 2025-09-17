@@ -1,32 +1,124 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Users, Trophy, Timer } from "lucide-react";
+import { Clock, Users, Trophy, Eye, Timer, Calendar } from "lucide-react";
+import { NumberSelectionModal } from "./NumberSelectionModal";
+import { AuthModal } from "./AuthModal";
+import { RaffleDetailsModal } from "./RaffleDetailsModal";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface RaffleCardProps {
+interface RaffleData {
   id: string;
   title: string;
+  description?: string;
   image: string;
   price: number;
   totalTickets: number;
   soldTickets: number;
   drawDate: string;
-  timeLeft: string;
+  timeLeft?: string;
+  status?: string;
   featured?: boolean;
+  institution?: string;
+  rules?: string;
+  prizeValue?: number;
 }
 
-const RaffleCard = ({ 
-  title, 
-  image, 
-  price, 
-  totalTickets, 
-  soldTickets, 
-  drawDate, 
-  timeLeft,
-  featured = false 
-}: RaffleCardProps) => {
-  const progress = (soldTickets / totalTickets) * 100;
-  const remainingTickets = totalTickets - soldTickets;
+interface RaffleCardProps {
+  // Aceita tanto um objeto raffle quanto props individuais
+  raffle?: RaffleData;
+  isActive?: boolean;
+  // Props individuais (para compatibilidade)
+  id?: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  price?: number;
+  totalTickets?: number;
+  soldTickets?: number;
+  drawDate?: string;
+  timeLeft?: string;
+  status?: string;
+  featured?: boolean;
+  institution?: string;
+  rules?: string;
+  prizeValue?: number;
+}
+
+export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
+  // Se raffle foi passado como prop, usa ele; senão usa as props individuais
+  const raffleData = props.raffle || {
+    id: props.id || '',
+    title: props.title || '',
+    description: props.description,
+    image: props.image || '',
+    price: props.price || 0,
+    totalTickets: props.totalTickets || 0,
+    soldTickets: props.soldTickets || 0,
+    drawDate: props.drawDate || '',
+    timeLeft: props.timeLeft,
+    status: props.status,
+    featured: props.featured || false,
+    institution: props.institution,
+    rules: props.rules,
+    prizeValue: props.prizeValue
+  };
+
+  const {
+    id,
+    title,
+    description,
+    image, 
+    price, 
+    totalTickets, 
+    soldTickets, 
+    drawDate, 
+    timeLeft,
+    status,
+    featured = false,
+    institution,
+    rules,
+    prizeValue
+  } = raffleData;
+  const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  
+  // Validações para evitar erros
+  const safePrice = typeof price === 'number' ? price : 0;
+  const safeTotalTickets = typeof totalTickets === 'number' ? totalTickets : 0;
+  const safeSoldTickets = typeof soldTickets === 'number' ? soldTickets : 0;
+  
+  const progress = safeTotalTickets > 0 ? (safeSoldTickets / safeTotalTickets) * 100 : 0;
+  const remainingTickets = safeTotalTickets - safeSoldTickets;
+
+  const handleParticipate = () => {
+    if (user) {
+      // Usuário logado - abrir modal de seleção de números
+      setIsModalOpen(true);
+    } else {
+      // Usuário não logado - abrir modal de autenticação
+      setIsAuthModalOpen(true);
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    // Após login bem-sucedido, abrir modal de seleção de números
+    setIsAuthModalOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const handleViewDetails = () => {
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleParticipateFromDetails = () => {
+    setIsDetailsModalOpen(false);
+    handleParticipate();
+  };
   
   return (
     <div className={`group relative bg-gradient-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-border-hover hover:shadow-card-hover hover:scale-105 ${
@@ -66,7 +158,7 @@ const RaffleCard = ({
           </h3>
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-accent-gold">
-              R$ {price.toFixed(2).replace('.', ',')}
+              R$ {safePrice.toFixed(2).replace('.', ',')}
             </span>
             <span className="text-sm text-foreground-muted">por número</span>
           </div>
@@ -82,7 +174,7 @@ const RaffleCard = ({
           <div className="flex items-center justify-between text-xs text-foreground-muted">
             <span className="flex items-center">
               <Users className="w-3 h-3 mr-1" />
-              {soldTickets} vendidos
+              {safeSoldTickets} vendidos
             </span>
             <span>{remainingTickets} restantes</span>
           </div>
@@ -96,16 +188,63 @@ const RaffleCard = ({
         
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
-          <Button variant="hero" className="flex-1">
+          <Button 
+            variant="hero" 
+            className="flex-1 cursor-pointer"
+            onClick={handleParticipate}
+          >
             Participar Agora
           </Button>
-          <Button variant="outline" size="default">
+          <Button variant="outline" size="default" onClick={handleViewDetails}>
             Ver Detalhes
           </Button>
         </div>
       </div>
+
+      {/* Modal de Seleção de Números */}
+      <NumberSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        raffle={{
+          id: id || '',
+          title: title || '',
+          image: image || '',
+          price: safePrice,
+          totalTickets: safeTotalTickets,
+          soldTickets: safeSoldTickets,
+          drawDate: drawDate || ''
+        }}
+      />
+
+      {/* Modal de Autenticação */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
+      />
+
+      {/* Modal de Detalhes */}
+      <RaffleDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        onParticipate={handleParticipateFromDetails}
+        raffle={{
+          id: id || '',
+          title: title || '',
+          description,
+          image: image || '',
+          price: safePrice,
+          totalTickets: safeTotalTickets,
+          soldTickets: safeSoldTickets,
+          drawDate: drawDate || '',
+          timeLeft,
+          status,
+          featured,
+          institution,
+          rules,
+          prizeValue
+        }}
+      />
     </div>
   );
 };
-
-export default RaffleCard;

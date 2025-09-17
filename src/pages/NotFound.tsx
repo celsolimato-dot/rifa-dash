@@ -1,10 +1,11 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, AlertTriangle } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
@@ -37,14 +38,18 @@ const NotFound = () => {
         
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-          <Button variant="hero" asChild>
-            <a href="/">
-              <Home className="w-4 h-4 mr-2" />
-              Voltar ao Início
-            </a>
+          <Button 
+            variant="hero" 
+            onClick={() => navigate('/')}
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Voltar ao Início
           </Button>
-          <Button variant="outline" asChild>
-            <a href="/#rifas">Ver Rifas Ativas</a>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/rifas')}
+          >
+            Ver Rifas Ativas
           </Button>
         </div>
       </div>

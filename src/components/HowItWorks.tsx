@@ -8,6 +8,8 @@ import {
   CheckCircle, 
   Sparkles 
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useNextDrawCard } from "@/contexts/NextDrawCardContext";
 
 const steps = [
   {
@@ -48,8 +50,22 @@ const features = [
 ];
 
 const HowItWorks = () => {
+  const navigate = useNavigate();
+  const { cardData, isLoading } = useNextDrawCard();
+  
+  const handleSmoothScroll = (targetId: string) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleParticipate = () => {
+    navigate('/auth');
+  };
+
   return (
-    <section className="py-16 bg-background">
+    <section id="como-funciona" className="py-16 bg-background">
       <div className="container mx-auto px-4">
         
         {/* Header */}
@@ -123,7 +139,12 @@ const HowItWorks = () => {
             </div>
             
             <div className="pt-4">
-              <Button variant="success" size="lg" className="w-full sm:w-auto">
+              <Button 
+                variant="success" 
+                size="lg" 
+                className="w-full sm:w-auto cursor-pointer"
+                onClick={() => handleSmoothScroll('rifas')}
+              >
                 Começar Agora
               </Button>
             </div>
@@ -136,10 +157,18 @@ const HowItWorks = () => {
                 <Trophy className="w-12 h-12 text-accent-gold mx-auto" />
                 <h4 className="text-xl font-semibold text-foreground">Próximo Sorteio</h4>
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold text-primary">Hoje às 20h</div>
-                  <p className="text-foreground-muted">Civic Sport 2024</p>
+                  <div className="text-3xl font-bold text-primary">
+                    {isLoading ? "Carregando..." : cardData?.time || "Aguarde..."}
+                  </div>
+                  <p className="text-foreground-muted">
+                    {isLoading ? "Carregando dados..." : cardData?.prize || "Próximo sorteio em breve"}
+                  </p>
                 </div>
-                <Button variant="gold" className="w-full">
+                <Button 
+                  variant="gold" 
+                  className="w-full cursor-pointer"
+                  onClick={handleParticipate}
+                >
                   Participar Agora
                 </Button>
               </div>

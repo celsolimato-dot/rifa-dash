@@ -298,10 +298,12 @@ const Auth = () => {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Button variant="ghost" asChild>
-            <a href="/" className="text-foreground-muted hover:text-primary">
-              ← Voltar para o site
-            </a>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="text-foreground-muted hover:text-primary"
+          >
+            ← Voltar para o site
           </Button>
         </div>
       </div>

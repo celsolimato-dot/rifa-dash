@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useSettings } from "@/contexts/SettingsContext";
 import { 
   Facebook, 
   Instagram, 
@@ -11,6 +13,24 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const { settings } = useSettings();
+
+  const handleSmoothScroll = (targetId: string) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleNavigateToRifas = () => {
+    navigate('/rifas');
+  };
+
+  const handleNavigateToAuth = () => {
+    navigate('/auth');
+  };
+
   return (
     <footer className="bg-background-tertiary border-t border-border">
       <div className="container mx-auto px-4 py-12">
@@ -51,19 +71,45 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="text-lg font-semibold text-foreground">Links Rápidos</h4>
             <nav className="space-y-2">
-              <a href="#" className="block text-foreground-muted hover:text-primary transition-colors text-sm">
+              <a 
+                href="#rifas" 
+                onClick={(e) => { e.preventDefault(); handleSmoothScroll('rifas'); }}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer"
+              >
                 Rifas Ativas
               </a>
-              <a href="#" className="block text-foreground-muted hover:text-primary transition-colors text-sm">
+              <a 
+                href="#como-funciona" 
+                onClick={(e) => { e.preventDefault(); handleSmoothScroll('como-funciona'); }}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer"
+              >
                 Como Funciona
               </a>
-              <a href="#" className="block text-foreground-muted hover:text-primary transition-colors text-sm">
+              <a 
+                href="#ganhadores" 
+                onClick={(e) => { e.preventDefault(); handleSmoothScroll('ganhadores'); }}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer"
+              >
                 Ganhadores
               </a>
-              <a href="#" className="block text-foreground-muted hover:text-primary transition-colors text-sm">
-                Minha Conta
+              <a 
+                href="/rifas" 
+                onClick={(e) => { e.preventDefault(); handleNavigateToRifas(); }}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer"
+              >
+                Ver Todas as Rifas
               </a>
-              <a href="#" className="block text-foreground-muted hover:text-primary transition-colors text-sm">
+              <button 
+                onClick={handleNavigateToAuth}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer text-left"
+              >
+                Minha Conta
+              </button>
+              <a 
+                href="https://wa.me/5563992940044" 
+                onClick={(e) => { e.preventDefault(); window.open('https://wa.me/5563992940044', '_blank'); }}
+                className="block text-foreground-muted hover:text-primary transition-colors text-sm cursor-pointer"
+              >
                 Suporte
               </a>
             </nav>
@@ -75,16 +121,16 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-foreground-muted text-sm">(11) 9999-9999</span>
+                <span className="text-foreground-muted text-sm">{settings.contactPhone}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-foreground-muted text-sm">contato@rifou.net</span>
+                <span className="text-foreground-muted text-sm">{settings.contactEmail}</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-foreground-muted text-sm">
-                  São Paulo, SP<br />
+                  {settings.contactCity}<br />
                   Brasil
                 </span>
               </div>
@@ -128,8 +174,8 @@ const Footer = () => {
             
             {/* Copyright */}
             <div className="text-xs text-foreground-muted text-center md:text-right">
-              <p>© 2024 RIFOU.NET - Todos os direitos reservados</p>
-              <p className="mt-1">CNPJ: XX.XXX.XXX/0001-XX</p>
+              <p>© 2024 {settings.siteName} - Todos os direitos reservados</p>
+              <p className="mt-1">CNPJ: {settings.contactCnpj}</p>
             </div>
           </div>
         </div>

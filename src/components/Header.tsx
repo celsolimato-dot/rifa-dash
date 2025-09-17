@@ -1,9 +1,32 @@
 import { Button } from "@/components/ui/button";
-import { Menu, User, LogIn } from "lucide-react";
+import { Menu, User, LogIn, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      targetElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
+
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    navigate('/');
+  };
+
+  const handleVerRifasClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    navigate('/rifas');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -21,18 +44,51 @@ const Header = () => {
 
           {/* Navigation - Desktop */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#rifas" className="text-foreground-muted hover:text-primary transition-colors">
+            <a 
+              href="/" 
+              onClick={handleHomeClick}
+              className="text-foreground-muted hover:text-primary transition-colors cursor-pointer"
+            >
+              Home
+            </a>
+            <a 
+              href="#rifas" 
+              onClick={(e) => handleSmoothScroll(e, 'rifas')}
+              className="text-foreground-muted hover:text-primary transition-colors cursor-pointer"
+            >
               Rifas Ativas
             </a>
-            <a href="#ganhadores" className="text-foreground-muted hover:text-primary transition-colors">
+            <a 
+              href="#ganhadores" 
+              onClick={(e) => handleSmoothScroll(e, 'ganhadores')}
+              className="text-foreground-muted hover:text-primary transition-colors cursor-pointer"
+            >
               Ganhadores
             </a>
-            <a href="#como-funciona" className="text-foreground-muted hover:text-primary transition-colors">
+            <a 
+              href="#como-funciona" 
+              onClick={(e) => handleSmoothScroll(e, 'como-funciona')}
+              className="text-foreground-muted hover:text-primary transition-colors cursor-pointer"
+            >
               Como Funciona
             </a>
-            <a href="#contato" className="text-foreground-muted hover:text-primary transition-colors">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleVerRifasClick}
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+            >
+              Ver Rifas
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => window.open('https://wa.me/5563992940044', '_blank')}
+              className="text-foreground-muted hover:text-primary hover:bg-accent"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
               Contato
-            </a>
+            </Button>
           </nav>
 
           {/* Auth Buttons */}
@@ -40,11 +96,14 @@ const Header = () => {
             {user ? (
               // Authenticated User
               <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="sm" asChild className="hidden md:flex">
-                  <a href={user.role === 'admin' ? '/admin' : '/cliente'}>
-                    <User className="w-4 h-4 mr-2" />
-                    {user.role === 'admin' ? 'Painel Admin' : 'Minha Conta'}
-                  </a>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden md:flex"
+                  onClick={() => navigate(user.role === 'admin' ? '/admin' : '/cliente')}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {user.role === 'admin' ? 'Painel Admin' : 'Minha Conta'}
                 </Button>
                 
                 <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
@@ -56,17 +115,22 @@ const Header = () => {
             ) : (
               // Not Authenticated
               <>
-                <Button variant="ghost" size="sm" className="hidden md:flex" asChild>
-                  <a href="/auth">
-                    <User className="w-4 h-4 mr-2" />
-                    Minha Conta
-                  </a>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden md:flex"
+                  onClick={() => navigate('/auth')}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Minha Conta
                 </Button>
-                <Button variant="hero" size="sm" asChild>
-                  <a href="/auth">
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Entrar
-                  </a>
+                <Button 
+                  variant="hero" 
+                  size="sm"
+                  onClick={() => navigate('/auth')}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Entrar
                 </Button>
               </>
             )}

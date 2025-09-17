@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AuthService } from '../services/authService';
 
 export type UserRole = 'admin' | 'client';
 
@@ -6,79 +7,88 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
   role: UserRole;
+  phone?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
   isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (userData: Omit<User, 'id'> & { password: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users para demonstração
-const mockUsers = {
-  'admin@rifou.net': {
-    id: '1',
-    name: 'Administrador',
-    email: 'admin@rifou.net',
-    phone: '(11) 99999-9999',
-    role: 'admin' as UserRole,
-    password: 'admin123'
-  },
-  'cliente@teste.com': {
-    id: '2', 
-    name: 'João Silva',
-    email: 'cliente@teste.com',
-    phone: '(11) 88888-8888',
-    role: 'client' as UserRole,
-    password: 'cliente123'
-  }
-};
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há usuário logado no localStorage
-    const storedUser = localStorage.getItem('rifou-user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      try {
+        const { user: currentUser, error } = await AuthService.getCurrentUser();
+        if (error) {
+          console.error('Error checking authentication:', error);
+        }
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
-    
-    // Simular delay da API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const mockUser = mockUsers[email as keyof typeof mockUsers];
-    
-    if (mockUser && mockUser.password === password) {
-      const { password: _, ...userWithoutPassword } = mockUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('rifou-user', JSON.stringify(userWithoutPassword));
+    try {
+      const { user, error } = await AuthService.login({ email, password });
+      if (error) {
+        throw new Error(error);
+      }
+      setUser(user);
+    } catch (error) {
+      throw error;
+    } finally {
       setIsLoading(false);
-      return true;
     }
-    
-    setIsLoading(false);
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('rifou-user');
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await AuthService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const { user, error } = await AuthService.register(userData);
+      if (error) {
+        throw new Error(error);
+      }
+      setUser(user);
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, register, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

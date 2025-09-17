@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import RaffleCarousel from "@/components/RaffleCarousel";
+import Winners from "@/components/Winners";
 import HowItWorks from "@/components/HowItWorks";
 import Footer from "@/components/Footer";
 
@@ -10,6 +11,7 @@ const Index = () => {
       <Header />
       <Hero />
       <RaffleCarousel />
+      <Winners />
       <HowItWorks />
       <Footer />
     </div>

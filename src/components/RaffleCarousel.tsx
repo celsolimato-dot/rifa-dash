@@ -1,64 +1,55 @@
-import RaffleCard from "./RaffleCard";
+import { RaffleCard } from "./RaffleCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { RaffleService, Raffle } from "../services/raffleService";
 import prizeCarImage from "@/assets/prize-car.jpg";
 import prizeMoneyImage from "@/assets/prize-money.jpg";
 import prizeTechImage from "@/assets/prize-tech.jpg";
 
-const mockRaffles = [
-  {
-    id: "1",
-    title: "Carro dos Sonhos - Civic Sport 2024",
-    image: prizeCarImage,
-    price: 15.99,
-    totalTickets: 5000,
-    soldTickets: 3250,
-    drawDate: "25/12/2024",
-    timeLeft: "15 dias",
-    featured: true,
-  },
-  {
-    id: "2",
-    title: "R$ 50.000 em Dinheiro + Moto",
-    image: prizeMoneyImage,
-    price: 9.99,
-    totalTickets: 8000,
-    soldTickets: 6800,
-    drawDate: "30/12/2024", 
-    timeLeft: "20 dias",
-    featured: false,
-  },
-  {
-    id: "3",
-    title: "Kit Tecnologia: iPhone + MacBook",
-    image: prizeTechImage,
-    price: 12.50,
-    totalTickets: 3000,
-    soldTickets: 1200,
-    drawDate: "28/12/2024",
-    timeLeft: "18 dias",
-    featured: false,
-  },
-];
-
 const RaffleCarousel = () => {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadRaffles();
+  }, []);
+
+  const loadRaffles = async () => {
+    try {
+      setIsLoading(true);
+      const { raffles, error } = await RaffleService.getRaffles({ status: 'active' });
+      if (error) {
+        console.error('Erro ao carregar rifas:', error);
+        setRaffles([]);
+      } else {
+        setRaffles(raffles);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar rifas:', error);
+      setRaffles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const nextSlide = () => {
     setCurrentIndex((prevIndex) => 
-      prevIndex === mockRaffles.length - 1 ? 0 : prevIndex + 1
+      prevIndex === raffles.length - 1 ? 0 : prevIndex + 1
     );
   };
   
   const prevSlide = () => {
     setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? mockRaffles.length - 1 : prevIndex - 1
+      prevIndex === 0 ? raffles.length - 1 : prevIndex - 1
     );
   };
 
   return (
-    <section className="py-16 bg-background-secondary">
+    <section id="rifas" className="py-16 bg-background-secondary">
       <div className="container mx-auto px-4">
         
         {/* Header */}
@@ -88,7 +79,7 @@ const RaffleCarousel = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {mockRaffles.map((_, index) => (
+            {raffles.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
@@ -115,7 +106,7 @@ const RaffleCarousel = () => {
         <div className="relative">
           {/* Desktop Grid - Show all cards */}
           <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {mockRaffles.map((raffle, index) => (
+            {raffles.map((raffle, index) => (
               <div 
                 key={raffle.id}
                 className="animate-slide-up"
@@ -133,7 +124,7 @@ const RaffleCarousel = () => {
                 className="flex transition-transform duration-500 ease-out"
                 style={{ transform: `translateX(-${currentIndex * 100}%)` }}
               >
-                {mockRaffles.map((raffle) => (
+                {raffles.map((raffle) => (
                   <div key={raffle.id} className="w-full flex-shrink-0 px-2">
                     <RaffleCard {...raffle} />
                   </div>
@@ -155,7 +146,7 @@ const RaffleCarousel = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {mockRaffles.map((_, index) => (
+            {raffles.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
@@ -180,7 +171,12 @@ const RaffleCarousel = () => {
         
         {/* View All CTA */}
         <div className="text-center mt-12">
-          <Button variant="hero" size="lg" className="px-8">
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="px-8"
+            onClick={() => navigate('/rifas')}
+          >
             Ver Todas as Rifas
           </Button>
         </div>

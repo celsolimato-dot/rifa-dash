@@ -3,6 +3,13 @@ import { Trophy, Shield, Zap } from "lucide-react";
 import heroBanner from "@/assets/hero-banner.jpg";
 
 const Hero = () => {
+  const handleSmoothScroll = (targetId: string) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-dark">
       {/* Background Image with Overlay */}
@@ -49,11 +56,21 @@ const Hero = () => {
           
           {/* Call-to-Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button variant="hero" size="lg" className="text-lg px-8 py-6 animate-glow-pulse">
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="text-lg px-8 py-6 animate-glow-pulse cursor-pointer"
+              onClick={() => handleSmoothScroll('rifas')}
+            >
               <Trophy className="w-5 h-5 mr-2" />
               Ver Rifas Ativas
             </Button>
-            <Button variant="premium" size="lg" className="text-lg px-8 py-6">
+            <Button 
+              variant="premium" 
+              size="lg" 
+              className="text-lg px-8 py-6 cursor-pointer"
+              onClick={() => handleSmoothScroll('como-funciona')}
+            >
               Como Funciona
             </Button>
           </div>

@@ -10,7 +10,10 @@ import {
   PlusCircle,
   MessageCircle,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  List,
+  Star,
+  CreditCard
 } from "lucide-react";
 
 import {
@@ -31,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const mainMenuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, exact: true },
   { title: "Rifas Ativas", url: "/admin/rifas", icon: Trophy },
+  { title: "Todas as Rifas", url: "/admin/todas-rifas", icon: List },
   { title: "Participantes", url: "/admin/participantes", icon: Users },
   { title: "Sorteador", url: "/admin/sorteador", icon: Shuffle },
   { title: "Relatórios", url: "/admin/relatorios", icon: BarChart3 },
@@ -38,6 +42,8 @@ const mainMenuItems = [
 
 const managementItems = [
   { title: "Nova Rifa", url: "/admin/rifas/nova", icon: PlusCircle },
+  { title: "Card Sorteio", url: "/admin/card-sorteio", icon: CreditCard },
+  { title: "Depoimentos", url: "/admin/depoimentos", icon: Star },
   { title: "Mensagens", url: "/admin/mensagens", icon: MessageCircle },
   { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
 ];
