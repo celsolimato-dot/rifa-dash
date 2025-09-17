@@ -56,6 +56,7 @@ O sistema inclui configuração completa de Row Level Security (RLS):
 - `sql/06_security_tickets.sql` - Políticas para tabela tickets  
 - `sql/07_security_users.sql` - Políticas para tabela users
 - `sql/08_security_testimonials.sql` - Políticas para tabela testimonials
+- `sql/09_security_views.sql` - Configuração RLS para views públicas
 - `sql/setup_security.sql` - **Script consolidado (RECOMENDADO)**
 
 ### Execução Rápida de Segurança
@@ -113,6 +114,20 @@ Para aplicar todas as configurações de segurança de uma vez:
 - Criação automática de perfil de usuário
 - Moderação automática de depoimentos (aprovação para rating ≥4)
 - Timestamps automáticos
+
+### Views Públicas Configuradas
+
+O sistema inclui views públicas com RLS configurado para evitar status "Unrestricted":
+
+- **`public_ticket_stats`** - Estatísticas de vendas por rifa (sem dados pessoais)
+- **`public_user_info`** - Informações básicas de usuários (nome, avatar, data de criação)
+- **`public_testimonials`** - Depoimentos aprovados com informações do usuário e rifa
+
+Todas as views têm:
+- ✅ RLS habilitado
+- ✅ Políticas de acesso público configuradas
+- ✅ Filtragem de dados sensíveis
+- ✅ Permissões para usuários anônimos e autenticados
 
 ## 📊 Estrutura das Tabelas
 

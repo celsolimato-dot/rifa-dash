@@ -380,6 +380,25 @@ GRANT SELECT ON public_user_info TO anon, authenticated;
 GRANT SELECT ON public_testimonials TO anon, authenticated;
 
 -- =====================================================
+-- CONFIGURAR RLS NAS VIEWS PÚBLICAS
+-- =====================================================
+
+-- Habilitar RLS nas views para evitar status "Unrestricted"
+ALTER VIEW public_ticket_stats ENABLE ROW LEVEL SECURITY;
+ALTER VIEW public_user_info ENABLE ROW LEVEL SECURITY;
+ALTER VIEW public_testimonials ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para permitir acesso público às views
+CREATE POLICY "Public access to ticket statistics" ON public_ticket_stats
+FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Public access to user info" ON public_user_info
+FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Public access to approved testimonials" ON public_testimonials
+FOR SELECT TO anon, authenticated USING (true);
+
+-- =====================================================
 -- VERIFICAÇÃO FINAL
 -- =====================================================
 
