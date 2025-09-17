@@ -1,31 +1,100 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTestimonials, Testimonial } from "@/contexts/TestimonialsContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { RealTestimonialService, Testimonial } from "../services/realTestimonialService";
 import { 
+  Star, 
   Plus, 
   Edit, 
   Trash2, 
-  Star, 
-  Trophy, 
-  Calendar,
-  DollarSign,
-  Eye,
-  Save,
-  X
+  Eye, 
+  Users, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  Trophy,
+  Search
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const TestimonialsManagement = () => {
-  const { testimonials, addTestimonial, updateTestimonial, deleteTestimonial } = useTestimonials();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+const testimonialService = new RealTestimonialService();
+
+export default function TestimonialsManagement() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [formData, setFormData] = useState<Partial<Testimonial>>({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTestimonials();
+  }, []);
+
+  const handleCreate = () => {
+    setEditingTestimonial(null);
+    setFormData({
+      content: "",
+      rating: 5,
+      type: "general",
+      status: "pending",
+      winning_number: "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const loadTestimonials = async () => {
+    try {
+      setIsLoading(true);
+      const data = await testimonialService.getAllTestimonials();
+      setTestimonials(data);
+    } catch (error) {
+      console.error('Erro ao carregar depoimentos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os depoimentos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateOrUpdate = async () => {
+    try {
+      if (editingTestimonial) {
+        await testimonialService.updateTestimonial(editingTestimonial.id, formData);
+        toast({
+          title: "Sucesso",
+          description: "Depoimento atualizado com sucesso!",
+        });
+      } else {
+        await testimonialService.createTestimonial(formData as any);
+        toast({
+          title: "Sucesso", 
+          description: "Depoimento criado com sucesso!",
+        });
+      }
+      setIsDialogOpen(false);
+      loadTestimonials();
+    } catch (error) {
+      console.error('Erro ao salvar depoimento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o depoimento.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleEdit = (testimonial: Testimonial) => {
     setEditingTestimonial(testimonial);
@@ -33,64 +102,102 @@ const TestimonialsManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleCreate = () => {
-    setEditingTestimonial(null);
-    setFormData({
-      name: "",
-      prize: "",
-      prizeValue: "",
-      date: new Date().toLocaleDateString('pt-BR'),
-      image: "/placeholder.svg",
-      raffleTitle: "",
-      winningNumber: "",
-      type: "car",
-      testimonial: ""
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (editingTestimonial) {
-      // Editar depoimento existente
-      updateTestimonial(editingTestimonial.id, formData);
-    } else {
-      // Criar novo depoimento
-      addTestimonial(formData as Omit<Testimonial, 'id'>);
-    }
-    setIsDialogOpen(false);
-    setFormData({});
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir este depoimento?")) {
-      deleteTestimonial(id);
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este depoimento?')) {
+      try {
+        await testimonialService.deleteTestimonial(id);
+        toast({
+          title: "Sucesso",
+          description: "Depoimento excluído com sucesso!",
+        });
+        loadTestimonials();
+      } catch (error) {
+        console.error('Erro ao excluir depoimento:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir o depoimento.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "car":
-      case "motorcycle":
-        return <Trophy className="w-4 h-4 text-accent-gold" />;
-      case "money":
-      case "combo":
-        return <DollarSign className="w-4 h-4 text-accent-success" />;
-      default:
-        return <Star className="w-4 h-4 text-primary" />;
+  const handleApprove = async (id: string) => {
+    try {
+      await testimonialService.approveTestimonial(id);
+      toast({
+        title: "Sucesso",
+        description: "Depoimento aprovado com sucesso!",
+      });
+      loadTestimonials();
+    } catch (error) {
+      console.error('Erro ao aprovar depoimento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível aprovar o depoimento.",
+        variant: "destructive",
+      });
     }
   };
 
-  const getTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case "car":
-      case "motorcycle":
-        return "gold";
-      case "money":
-      case "combo":
-        return "success";
-      default:
-        return "default";
+  const handleReject = async (id: string) => {
+    try {
+      await testimonialService.rejectTestimonial(id);
+      toast({
+        title: "Sucesso",
+        description: "Depoimento rejeitado com sucesso!",
+      });
+      loadTestimonials();
+    } catch (error) {
+      console.error('Erro ao rejeitar depoimento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível rejeitar o depoimento.",
+        variant: "destructive",
+      });
     }
+  };
+
+  const filteredTestimonials = testimonials.filter(testimonial => {
+    const matchesSearch = testimonial.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || testimonial.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      pending: "bg-yellow-100 text-yellow-800",
+      approved: "bg-green-100 text-green-800", 
+      rejected: "bg-red-100 text-red-800"
+    };
+
+    const labels = {
+      pending: "Pendente",
+      approved: "Aprovado",
+      rejected: "Rejeitado"
+    };
+
+    return (
+      <Badge className={variants[status as keyof typeof variants]}>
+        {labels[status as keyof typeof labels]}
+      </Badge>
+    );
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star 
+        key={i} 
+        className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+      />
+    ));
+  };
+
+  const stats = {
+    total: testimonials.length,
+    pending: testimonials.filter(t => t.status === 'pending').length,
+    approved: testimonials.filter(t => t.status === 'approved').length,
+    rejected: testimonials.filter(t => t.status === 'rejected').length
   };
 
   return (
@@ -98,8 +205,8 @@ const TestimonialsManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gerenciar Depoimentos</h1>
-          <p className="text-foreground-muted">Gerencie os depoimentos dos ganhadores que aparecem na seção "Ganhadores Recentes"</p>
+          <h1 className="text-3xl font-bold text-foreground">Depoimentos</h1>
+          <p className="text-foreground-muted">Gerencie todos os depoimentos dos ganhadores</p>
         </div>
         <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90">
           <Plus className="w-4 h-4 mr-2" />
@@ -107,16 +214,16 @@ const TestimonialsManagement = () => {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground-muted">Total de Depoimentos</p>
-                <p className="text-2xl font-bold text-foreground">{testimonials.length}</p>
+                <p className="text-sm font-medium text-foreground-muted">Total</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
-              <Star className="w-8 h-8 text-accent-gold" />
+              <Trophy className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -125,12 +232,10 @@ const TestimonialsManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground-muted">Com Depoimento</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {testimonials.filter(t => t.testimonial).length}
-                </p>
+                <p className="text-sm font-medium text-foreground-muted">Pendentes</p>
+                <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
               </div>
-              <Trophy className="w-8 h-8 text-primary" />
+              <Clock className="w-8 h-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
@@ -139,204 +244,221 @@ const TestimonialsManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground-muted">Sem Depoimento</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {testimonials.filter(t => !t.testimonial).length}
-                </p>
+                <p className="text-sm font-medium text-foreground-muted">Aprovados</p>
+                <p className="text-2xl font-bold text-foreground">{stats.approved}</p>
               </div>
-              <Calendar className="w-8 h-8 text-orange-500" />
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground-muted">Rejeitados</p>
+                <p className="text-2xl font-bold text-foreground">{stats.rejected}</p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Testimonials List */}
+      {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Lista de Depoimentos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="border border-border rounded-lg p-4 hover:bg-background-secondary/50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center space-x-3">
-                      {getTypeIcon(testimonial.type)}
-                      <h3 className="font-semibold text-foreground">{testimonial.name}</h3>
-                      <Badge variant={getTypeBadgeColor(testimonial.type) as any}>
-                        {testimonial.raffleTitle}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-foreground-muted">
-                      <div>
-                        <span className="font-medium">Prêmio:</span> {testimonial.prize}
-                      </div>
-                      <div>
-                        <span className="font-medium">Valor:</span> {testimonial.prizeValue}
-                      </div>
-                      <div>
-                        <span className="font-medium">Data:</span> {testimonial.date}
-                      </div>
-                    </div>
-                    
-                    <div className="text-sm text-foreground-muted">
-                      <span className="font-medium">Número Sorteado:</span> {testimonial.winningNumber}
-                    </div>
-                    
-                    {testimonial.testimonial && (
-                      <div className="bg-background-secondary p-3 rounded-lg mt-3">
-                        <p className="text-sm text-foreground italic">"{testimonial.testimonial}"</p>
-                      </div>
-                    )}
-                    
-                    {!testimonial.testimonial && (
-                      <div className="text-sm text-orange-500 font-medium">
-                        Sem depoimento cadastrado
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(testimonial)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(testimonial.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
+                <Input
+                  placeholder="Buscar por depoimento..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            ))}
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="approved">Aprovado</SelectItem>
+                <SelectItem value="rejected">Rejeitado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dialog for Create/Edit */}
+      {/* Testimonials List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Depoimentos ({filteredTestimonials.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <p className="text-foreground-muted">Carregando depoimentos...</p>
+            </div>
+          ) : filteredTestimonials.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-foreground-muted">Nenhum depoimento encontrado.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTestimonials.map((testimonial) => (
+                <Card key={testimonial.id} className="bg-muted/30">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="flex space-x-1">
+                            {renderStars(testimonial.rating || 5)}
+                          </div>
+                          {getStatusBadge(testimonial.status)}
+                        </div>
+                        
+                        <p className="text-foreground mb-3">{testimonial.content}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm text-foreground-muted">
+                          {testimonial.winning_number && (
+                            <div>
+                              <span className="font-medium">Número Sorteado:</span>
+                              <span className="ml-1">{testimonial.winning_number}</span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-medium">Data:</span>
+                            <span className="ml-1">
+                              {new Date(testimonial.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-2 ml-4">
+                        {testimonial.status === 'pending' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleApprove(testimonial.id)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Aprovar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleReject(testimonial.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Rejeitar
+                            </Button>
+                          </>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEdit(testimonial)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleDelete(testimonial.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingTestimonial ? "Editar Depoimento" : "Novo Depoimento"}
+              {editingTestimonial ? 'Editar Depoimento' : 'Novo Depoimento'}
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome do Ganhador</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ex: Maria Silva"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="raffleTitle">Título da Rifa</Label>
-                <Input
-                  id="raffleTitle"
-                  value={formData.raffleTitle || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, raffleTitle: e.target.value }))}
-                  placeholder="Ex: Carro dos Sonhos"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="prize">Prêmio</Label>
-                <Input
-                  id="prize"
-                  value={formData.prize || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prize: e.target.value }))}
-                  placeholder="Ex: Civic Sport 2024"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="prizeValue">Valor do Prêmio</Label>
-                <Input
-                  id="prizeValue"
-                  value={formData.prizeValue || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prizeValue: e.target.value }))}
-                  placeholder="Ex: R$ 120.000"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="winningNumber">Número Sorteado</Label>
-                <Input
-                  id="winningNumber"
-                  value={formData.winningNumber || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, winningNumber: e.target.value }))}
-                  placeholder="Ex: 1234"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="date">Data do Sorteio</Label>
-                <Input
-                  id="date"
-                  value={formData.date || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  placeholder="Ex: 15/12/2024"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo do Prêmio</Label>
-                <Select
-                  value={formData.type || "car"}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="car">Carro</SelectItem>
-                    <SelectItem value="motorcycle">Moto</SelectItem>
-                    <SelectItem value="money">Dinheiro</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
-                    <SelectItem value="tech">Tecnologia</SelectItem>
-                    <SelectItem value="entertainment">Entretenimento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="testimonial">Depoimento (Opcional)</Label>
+            <div>
+              <label className="text-sm font-medium text-foreground-muted">Depoimento</label>
               <Textarea
-                id="testimonial"
-                value={formData.testimonial || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, testimonial: e.target.value }))}
-                placeholder="Digite o depoimento do ganhador..."
+                placeholder="Digite o conteúdo do depoimento..."
+                value={formData.content || ''}
+                onChange={(e) => setFormData({...formData, content: e.target.value})}
                 rows={4}
               />
             </div>
-            
-            <div className="flex justify-end space-x-2 pt-4">
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground-muted">Avaliação</label>
+                <Select value={formData.rating?.toString()} onValueChange={(value) => setFormData({...formData, rating: parseInt(value)})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a avaliação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Estrela</SelectItem>
+                    <SelectItem value="2">2 Estrelas</SelectItem>
+                    <SelectItem value="3">3 Estrelas</SelectItem>
+                    <SelectItem value="4">4 Estrelas</SelectItem>
+                    <SelectItem value="5">5 Estrelas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground-muted">Número Sorteado</label>
+                <Input
+                  placeholder="Número sorteado"
+                  value={formData.winning_number || ''}
+                  onChange={(e) => setFormData({...formData, winning_number: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground-muted">Status</label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as any})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="approved">Aprovado</SelectItem>
+                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={handleSave}>
-                <Save className="w-4 h-4 mr-2" />
-                Salvar
+              <Button onClick={handleCreateOrUpdate}>
+                {editingTestimonial ? 'Atualizar' : 'Criar'}
               </Button>
             </div>
           </div>
@@ -344,6 +466,4 @@ const TestimonialsManagement = () => {
       </Dialog>
     </div>
   );
-};
-
-export default TestimonialsManagement;
+}

@@ -30,27 +30,52 @@ export class ClientHistoryService {
   
   static async getClientStats(userId: string): Promise<ClientHistoryStats> {
     try {
+      // Get current user email
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email;
+      
+      if (!userEmail) {
+        return { totalTickets: 0, totalSpent: 0, totalRaffles: 0, totalWins: 0 };
+      }
+
       // Get tickets count and total spent from tickets table
       const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('id, payment_status')
-        .eq('buyer_email', userId);
+        .select(`
+          id, 
+          payment_status,
+          raffle_id,
+          raffles!inner (
+            id,
+            ticket_price
+          )
+        `)
+        .eq('buyer_email', userEmail);
 
       if (ticketsError) throw ticketsError;
 
       const totalTickets = tickets?.filter(t => t.payment_status === 'paid').length || 0;
-      const totalSpent = 0; // Calculate from ticket prices if needed
+      const totalSpent = tickets?.reduce((sum, t) => {
+        if (t.payment_status === 'paid' && t.raffles?.ticket_price) {
+          return sum + t.raffles.ticket_price;
+        }
+        return sum;
+      }, 0) || 0;
       
       // Get unique raffles participated
-      const { data: raffles, error: rafflesError } = await supabase
-        .from('raffles')
+      const uniqueRaffleIds = [...new Set(tickets?.map(t => t.raffle_id) || [])];
+      const totalRaffles = uniqueRaffleIds.length;
+
+      // Get wins (from testimonials table for now)
+      const { data: wins, error: winsError } = await supabase
+        .from('testimonials')
         .select('id')
-        .in('id', tickets?.map(t => t.raffle_id) || []);
+        .eq('user_id', userData.user?.id)
+        .eq('status', 'approved');
 
-      if (rafflesError) throw rafflesError;
-
-      const totalRaffles = raffles?.length || 0;
-      const totalWins = 0; // Calculate wins from testimonials or other source
+      if (winsError) throw winsError;
+      
+      const totalWins = wins?.length || 0;
 
       return {
         totalTickets,
@@ -59,7 +84,7 @@ export class ClientHistoryService {
         totalWins
       };
     } catch (error) {
-      console.error('Error getting client stats:', error);
+      console.error('Erro ao buscar estatísticas do cliente:', error);
       return {
         totalTickets: 0,
         totalSpent: 0,
@@ -71,42 +96,70 @@ export class ClientHistoryService {
 
   static async getClientTransactions(userId: string, page: number = 1, limit: number = 10): Promise<ClientTransaction[]> {
     try {
+      // Get current user email
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email;
+      
+      if (!userEmail) {
+        return [];
+      }
+
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
           id,
           number,
+          purchase_date,
           payment_status,
-          created_at,
-          raffles (
-            id,
+          raffles!inner (
             title,
             ticket_price
           )
         `)
-        .eq('buyer_email', userId)
-        .order('created_at', { ascending: false })
+        .eq('buyer_email', userEmail)
+        .order('purchase_date', { ascending: false })
         .range((page - 1) * limit, page * limit - 1);
 
       if (error) throw error;
 
-      return tickets?.map(ticket => ({
-        id: ticket.id,
-        raffleTitle: ticket.raffles?.title || '',
-        ticketNumbers: [ticket.number.toString()],
-        amount: ticket.raffles?.ticket_price || 0,
-        date: ticket.created_at,
-        status: ticket.payment_status === 'paid' ? 'approved' : 'pending'
-      })) || [];
+      // Group tickets by raffle to create transactions
+      const transactionMap = new Map<string, ClientTransaction>();
+      
+      tickets?.forEach(ticket => {
+        const raffleTitle = ticket.raffles?.title || 'Rifa';
+        const key = `${raffleTitle}-${ticket.purchase_date}`;
+        
+        if (!transactionMap.has(key)) {
+          transactionMap.set(key, {
+            id: ticket.id,
+            raffleTitle,
+            ticketNumbers: [],
+            amount: ticket.raffles?.ticket_price || 0,
+            date: ticket.purchase_date || new Date().toISOString(),
+            status: ticket.payment_status === 'paid' ? 'approved' : 'pending'
+          });
+        }
+        
+        const transaction = transactionMap.get(key)!;
+        transaction.ticketNumbers.push(ticket.number.toString().padStart(2, '0'));
+        transaction.amount = ticket.raffles?.ticket_price || 0;
+      });
+
+      return Array.from(transactionMap.values());
     } catch (error) {
-      console.error('Error getting client transactions:', error);
+      console.error('Erro ao buscar transações do cliente:', error);
       return [];
     }
   }
 
   static async getClientPrizes(userId: string, page: number = 1, limit: number = 10): Promise<ClientPrize[]> {
     try {
-      // Get winning testimonials for this user
+      const { data: userData } = await supabase.auth.getUser();
+      
+      if (!userData.user) {
+        return [];
+      }
+
       const { data: testimonials, error } = await supabase
         .from('testimonials')
         .select(`
@@ -114,70 +167,67 @@ export class ClientHistoryService {
           content,
           winning_number,
           created_at,
-          raffle_id
+          status,
+          raffle_id,
+          raffles!inner (
+            title,
+            prize,
+            prize_value
+          )
         `)
-        .eq('user_id', userId)
-        .eq('type', 'winner')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'approved')
         .order('created_at', { ascending: false })
         .range((page - 1) * limit, page * limit - 1);
 
       if (error) throw error;
 
-      // Get raffle details for each testimonial
-      const raffleIds = testimonials?.map(t => t.raffle_id) || [];
-      const { data: raffles } = await supabase
-        .from('raffles')
-        .select('id, title, prize, prize_value')
-        .in('id', raffleIds);
-
-      return testimonials?.map(testimonial => {
-        const raffle = raffles?.find(r => r.id === testimonial.raffle_id);
-        return {
-          id: testimonial.id,
-          raffleTitle: raffle?.title || '',
-          prizeDescription: raffle?.prize || '',
-          prizeValue: raffle?.prize_value || 0,
-          winningNumber: testimonial.winning_number || '',
-          dateWon: testimonial.created_at,
-          status: 'pending' as const
-        };
-      }) || [];
+      return testimonials?.map(testimonial => ({
+        id: testimonial.id,
+        raffleTitle: testimonial.raffles?.title || 'Rifa',
+        prizeDescription: testimonial.raffles?.prize || 'Prêmio',
+        prizeValue: testimonial.raffles?.prize_value || 0,
+        winningNumber: testimonial.winning_number || '',
+        dateWon: testimonial.created_at,
+        status: 'claimed' as const
+      })) || [];
     } catch (error) {
-      console.error('Error getting client prizes:', error);
+      console.error('Erro ao buscar prêmios do cliente:', error);
       return [];
     }
   }
 
   static async getMonthlyStats(userId: string, year: number): Promise<any[]> {
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email;
+      
+      if (!userEmail) {
+        return Array.from({ length: 12 }, (_, i) => ({ month: i + 1, tickets: 0 }));
+      }
+
       const { data: tickets, error } = await supabase
         .from('tickets')
-        .select('created_at, payment_status')
-        .eq('buyer_email', userId)
-        .gte('created_at', `${year}-01-01`)
-        .lt('created_at', `${year + 1}-01-01`)
-        .order('created_at', { ascending: true });
+        .select('purchase_date, payment_status')
+        .eq('buyer_email', userEmail)
+        .gte('purchase_date', `${year}-01-01`)
+        .lt('purchase_date', `${year + 1}-01-01`);
 
       if (error) throw error;
 
-      // Group by month
-      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-        month: i + 1,
-        tickets: 0,
-        amount: 0
-      }));
-
+      const monthlyStats = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, tickets: 0 }));
+      
       tickets?.forEach(ticket => {
-        if (ticket.payment_status === 'paid') {
-          const month = new Date(ticket.created_at).getMonth();
-          monthlyData[month].tickets += 1;
+        if (ticket.payment_status === 'paid' && ticket.purchase_date) {
+          const month = new Date(ticket.purchase_date).getMonth();
+          monthlyStats[month].tickets++;
         }
       });
 
-      return monthlyData;
+      return monthlyStats;
     } catch (error) {
-      console.error('Error getting monthly stats:', error);
-      return [];
+      console.error('Erro ao buscar estatísticas mensais:', error);
+      return Array.from({ length: 12 }, (_, i) => ({ month: i + 1, tickets: 0 }));
     }
   }
 }

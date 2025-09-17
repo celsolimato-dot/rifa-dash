@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ClientStats {
   totalInvestido: number;
@@ -28,36 +28,37 @@ export interface ActiveRaffle {
 export class ClientStatsService {
   async getClientStats(userId: string): Promise<ClientStats> {
     try {
-      // Buscar participações do usuário
+      // Buscar participações do usuário através dos tickets
       const { data: participations, error: participationsError } = await supabase
-        .from('participant_raffles')
+        .from('tickets')
         .select(`
-          ticket_numbers,
+          number,
           purchase_date,
-          total_amount,
           status,
+          raffle_id,
           raffles (
             id,
             title,
             status,
-            prize_value
+            prize_value,
+            ticket_price
           )
         `)
-        .eq('participant_id', userId);
+        .eq('buyer_email', (await supabase.auth.getUser()).data.user?.email);
 
       if (participationsError) throw participationsError;
 
       // Calcular estatísticas
-      const totalInvestido = participations?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
-      const rifasAtivas = participations?.filter(p => p.raffles?.status === 'active').length || 0;
+      const totalInvestido = participations?.reduce((sum, p) => sum + (p.raffles?.ticket_price || 0), 0) || 0;
+      const rifasAtivas = [...new Set(participations?.filter(p => p.raffles?.status === 'active').map(p => p.raffle_id))].length || 0;
       
       // Buscar prêmios ganhos (simulado - seria uma tabela de winners)
       const premiosGanhos = 0; // TODO: implementar quando houver tabela de ganhadores
       
       // Calcular economia total (valor dos prêmios que poderia ter comprado)
       const economiaTotal = participations?.reduce((sum, p) => {
-        if (p.raffles?.prize_value) {
-          return sum + (p.raffles.prize_value - (p.total_amount || 0));
+        if (p.raffles?.prize_value && p.raffles?.ticket_price) {
+          return sum + (p.raffles.prize_value - p.raffles.ticket_price);
         }
         return sum;
       }, 0) || 0;
@@ -82,18 +83,18 @@ export class ClientStatsService {
   async getRecentActivity(userId: string, limit: number = 5): Promise<RecentActivity[]> {
     try {
       const { data: participations, error } = await supabase
-        .from('participant_raffles')
+        .from('tickets')
         .select(`
           id,
           purchase_date,
-          total_amount,
           status,
           raffles (
             title,
-            status
+            status,
+            ticket_price
           )
         `)
-        .eq('participant_id', userId)
+        .eq('buyer_email', (await supabase.auth.getUser()).data.user?.email)
         .order('purchase_date', { ascending: false })
         .limit(limit);
 
@@ -103,8 +104,8 @@ export class ClientStatsService {
         id: p.id,
         type: 'participacao' as const,
         title: `Participação em ${p.raffles?.title || 'Rifa'}`,
-        date: p.purchase_date,
-        value: p.total_amount || 0,
+        date: p.purchase_date || new Date().toISOString(),
+        value: p.raffles?.ticket_price || 0,
         status: p.raffles?.status || 'unknown'
       })) || [];
     } catch (error) {
@@ -116,10 +117,10 @@ export class ClientStatsService {
   async getActiveRaffles(userId: string): Promise<ActiveRaffle[]> {
     try {
       const { data: participations, error } = await supabase
-        .from('participant_raffles')
+        .from('tickets')
         .select(`
-          ticket_numbers,
-          raffles (
+          number,
+          raffles!inner (
             id,
             title,
             draw_date,
@@ -128,19 +129,31 @@ export class ClientStatsService {
             status
           )
         `)
-        .eq('participant_id', userId)
+        .eq('buyer_email', (await supabase.auth.getUser()).data.user?.email)
         .eq('raffles.status', 'active');
 
       if (error) throw error;
 
-      return participations?.map(p => ({
-        id: p.raffles?.id || '',
-        title: p.raffles?.title || '',
-        numbers: p.ticket_numbers || [],
-        drawDate: p.raffles?.draw_date || '',
-        totalNumbers: p.raffles?.total_tickets || 0,
-        soldNumbers: p.raffles?.sold_tickets || 0
-      })) || [];
+      // Group tickets by raffle
+      const raffleMap = new Map();
+      participations?.forEach(p => {
+        if (p.raffles) {
+          const raffleId = p.raffles.id;
+          if (!raffleMap.has(raffleId)) {
+            raffleMap.set(raffleId, {
+              id: raffleId,
+              title: p.raffles.title,
+              numbers: [],
+              drawDate: p.raffles.draw_date,
+              totalNumbers: p.raffles.total_tickets,
+              soldNumbers: p.raffles.sold_tickets
+            });
+          }
+          raffleMap.get(raffleId).numbers.push(p.number);
+        }
+      });
+      
+      return Array.from(raffleMap.values());
     } catch (error) {
       console.error('Erro ao buscar rifas ativas:', error);
       return [];

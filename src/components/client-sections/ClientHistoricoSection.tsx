@@ -20,9 +20,9 @@ import {
 
 export const ClientHistoricoSection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [participations, setParticipations] = useState<Participation[]>([]);
-  const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [transactions, setTransactions] = useState<ClientTransaction[]>([]);
+  const [participations, setParticipations] = useState<ClientTransaction[]>([]);
+  const [prizes, setPrizes] = useState<ClientPrize[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -54,8 +54,7 @@ export const ClientHistoricoSection: React.FC = () => {
 
 
   const filteredTransactions = transactions.filter(transaction =>
-    transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
+    transaction.raffleTitle.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredParticipations = participations.filter(participation =>
@@ -99,10 +98,10 @@ export const ClientHistoricoSection: React.FC = () => {
             
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-foreground truncate">
-                {transaction.title}
+                {transaction.raffleTitle}
               </h4>
               <p className="text-sm text-foreground-muted mt-1">
-                {transaction.description}
+                Números: {transaction.ticketNumbers.join(', ')}
               </p>
               <div className="flex items-center space-x-2 mt-2">
                 <Calendar className="w-3 h-3 text-muted-foreground" />
@@ -120,7 +119,7 @@ export const ClientHistoricoSection: React.FC = () => {
               {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
             <Badge variant={
-              transaction.status === 'recebido' ? 'secondary' : 'outline'
+              transaction.status === 'approved' ? 'secondary' : 'outline'
             }>
               {transaction.status}
             </Badge>

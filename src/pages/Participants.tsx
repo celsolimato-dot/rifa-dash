@@ -245,13 +245,13 @@ export default function Participants() {
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
                         <Avatar>
-                          <AvatarImage src={participant.avatar} />
+                          <AvatarImage src={participant.avatar_url} />
                           <AvatarFallback>{getInitials(participant.name)}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium text-foreground">{participant.name}</p>
                           <p className="text-sm text-foreground-muted">
-                            Cadastrado em {new Date(participant.registrationDate).toLocaleDateString('pt-BR')}
+                            Cadastrado em {new Date(participant.created_at).toLocaleDateString('pt-BR')}
                           </p>
                         </div>
                       </div>
