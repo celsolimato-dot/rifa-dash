@@ -21,13 +21,8 @@ const RaffleCarousel = () => {
   const loadRaffles = async () => {
     try {
       setIsLoading(true);
-      const { raffles, error } = await RaffleService.getRaffles({ status: 'active' });
-      if (error) {
-        console.error('Erro ao carregar rifas:', error);
-        setRaffles([]);
-      } else {
-        setRaffles(raffles);
-      }
+      const data = await RaffleService.getRaffles({ status: 'active' });
+      setRaffles(data || []);
     } catch (error) {
       console.error('Erro ao carregar rifas:', error);
       setRaffles([]);
@@ -116,14 +111,14 @@ const RaffleCarousel = () => {
                   id={raffle.id}
                   title={raffle.title}
                   prize={raffle.prize}
-                  prizeValue={raffle.prizeValue}
-                  ticketPrice={raffle.ticketPrice}
-                  totalTickets={raffle.totalTickets}
-                  soldTickets={raffle.soldTickets}
-                  drawDate={raffle.drawDate}
+                  prizeValue={raffle.prize_value}
+                  ticketPrice={raffle.ticket_price}
+                  totalTickets={raffle.total_tickets}
+                  soldTickets={raffle.sold_tickets}
+                  drawDate={raffle.draw_date}
                   status={raffle.status}
                   description={raffle.description}
-                  image={raffle.imageUrl || prizeCarImage}
+                  image={raffle.image_url || prizeCarImage}
                 />
               </div>
             ))}
@@ -142,14 +137,14 @@ const RaffleCarousel = () => {
                       id={raffle.id}
                       title={raffle.title}
                       prize={raffle.prize}
-                      prizeValue={raffle.prizeValue}
-                      ticketPrice={raffle.ticketPrice}
-                      totalTickets={raffle.totalTickets}
-                      soldTickets={raffle.soldTickets}
-                      drawDate={raffle.drawDate}
+                      prizeValue={raffle.prize_value}
+                      ticketPrice={raffle.ticket_price}
+                      totalTickets={raffle.total_tickets}
+                      soldTickets={raffle.sold_tickets}
+                      drawDate={raffle.draw_date}
                       status={raffle.status}
                       description={raffle.description}
-                      image={raffle.imageUrl || prizeCarImage}
+                      image={raffle.image_url || prizeCarImage}
                     />
                   </div>
                 ))}

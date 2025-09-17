@@ -39,7 +39,7 @@ export const NextDrawCardProvider: React.FC<NextDrawCardProviderProps> = ({ chil
       
       if (activeRaffles && activeRaffles.length > 0) {
         const nextRaffle = activeRaffles[0]; // Pega a primeira rifa ativa
-        const drawDate = new Date(nextRaffle.drawDate);
+        const drawDate = new Date(nextRaffle.draw_date);
         const now = new Date();
         
         // Formatar data do sorteio

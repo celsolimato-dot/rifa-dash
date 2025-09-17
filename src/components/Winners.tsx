@@ -151,12 +151,12 @@ const Winners = () => {
                               <div className="flex items-center space-x-2">
                                 {getTypeIcon(testimonial.type)}
                                 <Badge variant={getTypeColor(testimonial.type) as any} className="text-xs">
-                                  {testimonial.raffleTitle}
+                                  Depoimento
                                 </Badge>
                               </div>
                               <div className="text-xs text-foreground-muted flex items-center">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {testimonial.date}
+                                {new Date(testimonial.created_at || '').toLocaleDateString('pt-BR')}
                               </div>
                             </div>
                           </CardHeader>
@@ -166,17 +166,21 @@ const Winners = () => {
                             <div className="text-center space-y-2">
                               <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
                                 <span className="text-white font-bold text-xl">
-                                  {testimonial.name.split(' ').map(n => n[0]).join('')}
+                                  {'Usuário'.split(' ').map(n => n[0]).join('')}
                                 </span>
                               </div>
-                              <h4 className="font-semibold text-foreground">{testimonial.name}</h4>
-                              <p className="text-sm text-foreground-muted">Número sorteado: {testimonial.winningNumber}</p>
+                              <h4 className="font-semibold text-foreground">Usuário</h4>
+                              <p className="text-sm text-foreground-muted">Número sorteado: {testimonial.winning_number || 'N/A'}</p>
                             </div>
                             
-                            {/* Prize Info */}
+                            {/* Testimonial Content */}
                             <div className="bg-background-secondary rounded-lg p-4 text-center space-y-2">
-                              <p className="font-medium text-foreground">{testimonial.prize}</p>
-                              <p className="text-lg font-bold text-accent-gold">{testimonial.prizeValue}</p>
+                              <p className="font-medium text-foreground">{testimonial.content}</p>
+                              <div className="flex justify-center">
+                                {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
+                                  <Star key={i} className="w-4 h-4 fill-accent-gold text-accent-gold" />
+                                ))}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>

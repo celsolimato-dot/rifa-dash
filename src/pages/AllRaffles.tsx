@@ -49,13 +49,8 @@ const AllRaffles = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const { raffles: rafflesData, error } = await RaffleService.getRaffles();
-      if (error) {
-        console.error('Erro ao carregar rifas:', error);
-        setRaffles([]);
-      } else {
-        setRaffles(rafflesData);
-      }
+      const data = await RaffleService.getRaffles();
+      setRaffles(data || []);
       // TODO: Implementar serviço de ganhadores quando disponível
       setWinners([]);
     } catch (error) {

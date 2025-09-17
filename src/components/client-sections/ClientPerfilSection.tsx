@@ -23,6 +23,10 @@ export const ClientPerfilSection: React.FC = () => {
   const { user } = useAuth();
   const [showProfileEditModal, setShowProfileEditModal] = useState(false);
   const [userStats, setUserStats] = useState<UserStats>({
+    totalSpent: 0,
+    totalTickets: 0,
+    rafflesParticipated: 0,
+    wins: 0,
     totalParticipacoes: 0,
     premiosGanhos: 0,
     totalInvestido: 0,

@@ -6,7 +6,8 @@ export type RaffleInsert = TablesInsert<'raffles'>;
 export type RaffleUpdate = TablesUpdate<'raffles'>;
 
 export class RealRaffleService {
-  async getAllRaffles(): Promise<Raffle[]> {
+  // Static instance for direct method calls
+  static async getAllRaffles(): Promise<Raffle[]> {
     const { data, error } = await supabase
       .from('raffles')
       .select('*')
@@ -20,7 +21,7 @@ export class RealRaffleService {
     return data || [];
   }
 
-  async getRaffles(filters?: { status?: string; category?: string }): Promise<Raffle[]> {
+  static async getRaffles(filters?: { status?: string; category?: string }): Promise<Raffle[]> {
     let query = supabase
       .from('raffles')
       .select('*')
@@ -44,7 +45,7 @@ export class RealRaffleService {
     return data || [];
   }
 
-  async getActiveRaffles(): Promise<Raffle[]> {
+  static async getActiveRaffles(): Promise<Raffle[]> {
     const { data, error } = await supabase
       .from('raffles')
       .select('*')
@@ -59,7 +60,7 @@ export class RealRaffleService {
     return data || [];
   }
 
-  async getRaffleById(id: string): Promise<Raffle | null> {
+  static async getRaffleById(id: string): Promise<Raffle | null> {
     const { data, error } = await supabase
       .from('raffles')
       .select('*')
@@ -74,7 +75,7 @@ export class RealRaffleService {
     return data;
   }
 
-  async createRaffle(raffle: RaffleInsert): Promise<Raffle> {
+  static async createRaffle(raffle: RaffleInsert): Promise<Raffle> {
     const { data, error } = await supabase
       .from('raffles')
       .insert(raffle)
@@ -89,7 +90,7 @@ export class RealRaffleService {
     return data;
   }
 
-  async updateRaffle(id: string, updates: RaffleUpdate): Promise<Raffle> {
+  static async updateRaffle(id: string, updates: RaffleUpdate): Promise<Raffle> {
     const { data, error } = await supabase
       .from('raffles')
       .update(updates)
@@ -105,7 +106,7 @@ export class RealRaffleService {
     return data;
   }
 
-  async deleteRaffle(id: string): Promise<void> {
+  static async deleteRaffle(id: string): Promise<void> {
     const { error } = await supabase
       .from('raffles')
       .delete()
@@ -117,7 +118,7 @@ export class RealRaffleService {
     }
   }
 
-  async getRafflesByCategory(category: string): Promise<Raffle[]> {
+  static async getRafflesByCategory(category: string): Promise<Raffle[]> {
     const { data, error } = await supabase
       .from('raffles')
       .select('*')

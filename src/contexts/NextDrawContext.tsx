@@ -46,16 +46,16 @@ export const NextDrawProvider: React.FC<{ children: ReactNode }> = ({ children }
         const nextDrawData: NextDraw = {
           id: raffle.id,
           title: raffle.title,
-          description: raffle.description,
+          description: raffle.description || '',
           prize: raffle.prize,
-          prizeValue: `R$ ${raffle.prizeValue.toLocaleString('pt-BR')}`,
-          drawDate: raffle.drawDate,
-          daysRemaining: calculateDaysRemainingFromDate(raffle.drawDate),
-          totalTickets: raffle.totalTickets,
-          soldTickets: raffle.soldTickets,
-          ticketPrice: raffle.ticketPrice,
-          status: raffle.status,
-          image: raffle.image,
+          prizeValue: `R$ ${raffle.prize_value.toLocaleString('pt-BR')}`,
+          drawDate: raffle.draw_date,
+          daysRemaining: calculateDaysRemainingFromDate(raffle.draw_date),
+          totalTickets: raffle.total_tickets,
+          soldTickets: raffle.sold_tickets,
+          ticketPrice: raffle.ticket_price,
+          status: raffle.status as 'active' | 'paused' | 'completed',
+          image: raffle.image_url || '',
           category: raffle.category
         };
         setNextDraw(nextDrawData);

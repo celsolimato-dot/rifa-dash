@@ -108,7 +108,7 @@ export default function ActiveRaffles() {
   const getTotalStats = () => {
     const activeRaffles = raffles.filter(r => r.status === "active").length;
     const totalRevenue = raffles.reduce((sum, r) => sum + r.revenue, 0);
-    const totalParticipants = raffles.reduce((sum, r) => sum + r.soldTickets, 0);
+    const totalParticipants = raffles.reduce((sum, r) => sum + r.sold_tickets, 0);
     
     return { activeRaffles, totalRevenue, totalParticipants };
   };
@@ -228,21 +228,21 @@ export default function ActiveRaffles() {
                 <TableRow key={raffle.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      {raffle.institution?.logo && (
-                        <img 
-                          src={raffle.institution.logo} 
-                          alt={`Logo ${raffle.institution.name}`}
-                          className="w-8 h-8 object-contain rounded border bg-white"
-                        />
-                      )}
+                        {raffle.institution_logo && (
+                          <img 
+                            src={raffle.institution_logo} 
+                            alt={`Logo ${raffle.institution_name}`}
+                            className="w-8 h-8 object-contain rounded border bg-white"
+                          />
+                        )}
                       <div>
                         <div className="font-medium">{raffle.title}</div>
-                        <div className="text-sm text-foreground-muted">{raffle.category}</div>
-                        {raffle.institution?.name && (
-                          <div className="text-xs text-blue-600 font-medium">
-                            {raffle.institution.name}
-                          </div>
-                        )}
+                          <div className="text-sm text-foreground-muted">{raffle.category}</div>
+                          {raffle.institution_name && (
+                            <div className="text-xs text-blue-600 font-medium">
+                              {raffle.institution_name}
+                            </div>
+                          )}
                       </div>
                     </div>
                   </TableCell>
@@ -257,23 +257,23 @@ export default function ActiveRaffles() {
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span>{raffle.soldTickets}/{raffle.totalTickets}</span>
-                        <span>{calculateProgress(raffle.soldTickets, raffle.totalTickets)}%</span>
+                        <span>{raffle.sold_tickets}/{raffle.total_tickets}</span>
+                        <span>{calculateProgress(raffle.sold_tickets, raffle.total_tickets)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className="bg-primary h-2 rounded-full" 
-                          style={{ width: `${calculateProgress(raffle.soldTickets, raffle.totalTickets)}%` }}
+                          style={{ width: `${calculateProgress(raffle.sold_tickets, raffle.total_tickets)}%` }}
                         />
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>R$ {raffle.ticketPrice.toFixed(2)}</TableCell>
+                  <TableCell>R$ {raffle.ticket_price.toFixed(2)}</TableCell>
                   <TableCell className="font-medium text-green-600">
                     R$ {raffle.revenue.toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    {format(raffle.drawDate, "dd/MM/yyyy", { locale: ptBR })}
+                    {format(new Date(raffle.draw_date), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -357,11 +357,11 @@ export default function ActiveRaffles() {
                 </div>
                 <div>
                   <h4 className="font-semibold">Valor do Prêmio</h4>
-                  <p>R$ {selectedRaffle.prizeValue.toLocaleString()}</p>
+                  <p>R$ {selectedRaffle.prize_value.toLocaleString()}</p>
                 </div>
                 <div>
                   <h4 className="font-semibold">Preço do Bilhete</h4>
-                  <p>R$ {selectedRaffle.ticketPrice.toFixed(2)}</p>
+                  <p>R$ {selectedRaffle.ticket_price.toFixed(2)}</p>
                 </div>
                 <div>
                   <h4 className="font-semibold">Status</h4>
@@ -371,7 +371,7 @@ export default function ActiveRaffles() {
                 </div>
                 <div>
                   <h4 className="font-semibold">Progresso</h4>
-                  <p>{selectedRaffle.soldTickets}/{selectedRaffle.totalTickets} ({calculateProgress(selectedRaffle.soldTickets, selectedRaffle.totalTickets)}%)</p>
+                  <p>{selectedRaffle.sold_tickets}/{selectedRaffle.total_tickets} ({calculateProgress(selectedRaffle.sold_tickets, selectedRaffle.total_tickets)}%)</p>
                 </div>
                 <div>
                   <h4 className="font-semibold">Receita</h4>
@@ -379,27 +379,27 @@ export default function ActiveRaffles() {
                 </div>
                 <div>
                   <h4 className="font-semibold">Data do Sorteio</h4>
-                  <p>{format(selectedRaffle.drawDate, "dd/MM/yyyy", { locale: ptBR })}</p>
+                  <p>{format(new Date(selectedRaffle.draw_date), "dd/MM/yyyy", { locale: ptBR })}</p>
                 </div>
                 <div>
                   <h4 className="font-semibold">Criada em</h4>
-                  <p>{format(selectedRaffle.createdAt, "dd/MM/yyyy", { locale: ptBR })}</p>
+                  <p>{format(new Date(selectedRaffle.created_at || ''), "dd/MM/yyyy", { locale: ptBR })}</p>
                 </div>
               </div>
               
-              {selectedRaffle.institution && (
+              {selectedRaffle.institution_name && (
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-3">Instituição Responsável</h4>
                   <div className="flex items-center space-x-4">
-                    {selectedRaffle.institution.logo && (
+                    {selectedRaffle.institution_logo && (
                       <img 
-                        src={selectedRaffle.institution.logo} 
-                        alt={`Logo ${selectedRaffle.institution.name}`}
+                        src={selectedRaffle.institution_logo} 
+                        alt={`Logo ${selectedRaffle.institution_name}`}
                         className="w-16 h-16 object-contain rounded border bg-white"
                       />
                     )}
                     <div>
-                      <p className="font-medium text-blue-600">{selectedRaffle.institution.name}</p>
+                      <p className="font-medium text-blue-600">{selectedRaffle.institution_name}</p>
                       <p className="text-sm text-foreground-muted">Instituição beneficiária</p>
                     </div>
                   </div>
