@@ -35,7 +35,7 @@ export const RealAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       id: supabaseUser.id,
       name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Usuário',
       email: supabaseUser.email || '',
-      role: supabaseUser.email === 'admin@rifou.net' ? 'admin' : 'client',
+      role: supabaseUser.email === 'admin@rifou.net.br' ? 'admin' : 'client',
       phone: supabaseUser.user_metadata?.phone,
       avatar: supabaseUser.user_metadata?.avatar_url
     };

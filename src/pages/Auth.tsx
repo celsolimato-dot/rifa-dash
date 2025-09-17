@@ -35,7 +35,7 @@ const Auth = () => {
       });
       
       // Redirecionar baseado no tipo de usuário
-      if (loginData.email === 'admin@rifou.net') {
+      if (loginData.email === 'admin@rifou.net.br') {
         navigate('/admin');
       } else {
         navigate('/dashboard');
@@ -114,7 +114,7 @@ const Auth = () => {
                   {/* Demo Credentials */}
                   <div className="p-3 bg-background-secondary rounded-lg border border-border text-xs space-y-1">
                     <p className="text-foreground font-medium">Credenciais de demonstração:</p>
-                    <p className="text-primary">Admin: admin@rifou.net / admin123</p>
+                    <p className="text-primary">Admin: admin@rifou.net.br / admin123</p>
                     <p className="text-accent-success">Cliente: cliente@teste.com / cliente123</p>
                   </div>
                   
