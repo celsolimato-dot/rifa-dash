@@ -64,9 +64,9 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
   const [pixData, setPixData] = useState<any>(null);
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
 
-  // Mock data para números vendidos e reservados
-  const [soldNumbers] = useState<string[]>(['001', '002', '015', '023', '045', '067', '089', '123', '156', '234']);
-  const [reservedNumbers, setReservedNumbers] = useState<string[]>(['003', '024', '068']);
+  // Estado para números vendidos e reservados (buscar do banco)
+  const [soldNumbers, setSoldNumbers] = useState<string[]>([]);
+  const [reservedNumbers, setReservedNumbers] = useState<string[]>([]);
 
   // Gerar números disponíveis
   const generateNumbers = () => {

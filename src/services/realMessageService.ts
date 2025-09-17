@@ -44,7 +44,7 @@ export class RealMessageService {
   }
 
   async createMessage(message: Omit<Message, 'id' | 'created_at' | 'sent_count' | 'opened_count' | 'click_count'>): Promise<Message> {
-    // Mock implementation - would need actual tables
+// Mock para implementação futura com supabase
     const newMessage: Message = {
       id: Date.now().toString(),
       sent_count: 0,
@@ -57,7 +57,7 @@ export class RealMessageService {
   }
 
   async sendMessage(messageId: string): Promise<void> {
-    // Mock implementation
+    // Implementação futura - integração com supabase
     console.log('Message sent:', messageId);
   }
 

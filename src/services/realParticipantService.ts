@@ -54,7 +54,7 @@ export class RealParticipantService {
   }
 
   async getParticipantRaffles(participantId: string): Promise<ParticipantRaffle[]> {
-    // Mock implementation for now since we don't have a purchases table
+    // Implementação futura - criar tabela de compras/participações
     return [];
   }
 

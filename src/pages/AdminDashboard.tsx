@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Trophy, 
   Users, 
@@ -14,8 +15,60 @@ import {
   Plus,
   BarChart3
 } from "lucide-react";
+import { useAdminStats } from "@/hooks/useAdminStats";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
+  const { stats } = useAdminStats();
+  const navigate = useNavigate();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="success">Ativa</Badge>;
+      case 'completed':
+        return <Badge variant="outline">Finalizada</Badge>;
+      case 'draft':
+        return <Badge variant="secondary">Rascunho</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  if (stats.isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-80" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="bg-gradient-card border-border">
+              <CardHeader>
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-3 w-40" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       
@@ -39,9 +92,11 @@ const AdminDashboard = () => {
             <DollarSign className="h-4 w-4 text-accent-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 125.430</div>
+            <div className="text-2xl font-bold text-foreground">
+              {formatCurrency(stats.totalRevenue)}
+            </div>
             <p className="text-xs text-accent-success">
-              +12.5% em relação ao mês passado
+              Total arrecadado
             </p>
           </CardContent>
         </Card>
@@ -55,9 +110,9 @@ const AdminDashboard = () => {
             <Trophy className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">12</div>
+            <div className="text-2xl font-bold text-foreground">{stats.activeRaffles}</div>
             <p className="text-xs text-foreground-muted">
-              3 sorteios hoje
+              rifas em andamento
             </p>
           </CardContent>
         </Card>
@@ -71,9 +126,9 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4 text-accent-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">8.542</div>
+            <div className="text-2xl font-bold text-foreground">{stats.totalParticipants}</div>
             <p className="text-xs text-accent-success">
-              +234 novos esta semana
+              usuários cadastrados
             </p>
           </CardContent>
         </Card>
@@ -87,9 +142,11 @@ const AdminDashboard = () => {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">68.4%</div>
+            <div className="text-2xl font-bold text-foreground">
+              {stats.conversionRate.toFixed(1)}%
+            </div>
             <p className="text-xs text-accent-success">
-              +2.1% esta semana
+              rifas finalizadas
             </p>
           </CardContent>
         </Card>
@@ -97,7 +154,12 @@ const AdminDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Button variant="hero" size="lg" className="h-auto p-4 justify-start">
+        <Button 
+          variant="hero" 
+          size="lg" 
+          className="h-auto p-4 justify-start"
+          onClick={() => navigate('/admin/rifas/nova')}
+        >
           <Plus className="w-5 h-5 mr-3" />
           <div className="text-left">
             <div className="font-semibold">Nova Rifa</div>
@@ -105,7 +167,12 @@ const AdminDashboard = () => {
           </div>
         </Button>
         
-        <Button variant="gold" size="lg" className="h-auto p-4 justify-start">
+        <Button 
+          variant="gold" 
+          size="lg" 
+          className="h-auto p-4 justify-start"
+          onClick={() => navigate('/admin/sorteador')}
+        >
           <Shuffle className="w-5 h-5 mr-3" />
           <div className="text-left">
             <div className="font-semibold">Realizar Sorteio</div>
@@ -113,7 +180,12 @@ const AdminDashboard = () => {
           </div>
         </Button>
         
-        <Button variant="premium" size="lg" className="h-auto p-4 justify-start">
+        <Button 
+          variant="premium" 
+          size="lg" 
+          className="h-auto p-4 justify-start"
+          onClick={() => navigate('/admin/relatorios')}
+        >
           <BarChart3 className="w-5 h-5 mr-3" />
           <div className="text-left">
             <div className="font-semibold">Ver Relatórios</div>
@@ -138,43 +210,47 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             
-            {/* Raffle Item */}
-            <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Carro dos Sonhos - Civic Sport</p>
-                <p className="text-sm text-foreground-muted">3.250 / 5.000 cotas vendidas</p>
+            {stats.recentRaffles.length === 0 ? (
+              <div className="text-center py-8 text-foreground-muted">
+                <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhuma rifa encontrada</p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => navigate('/admin/rifas/nova')}
+                >
+                  Criar primeira rifa
+                </Button>
               </div>
-              <div className="text-right space-y-1">
-                <Badge variant="success">Ativa</Badge>
-                <p className="text-xs text-foreground-muted">Sorteio: 25/12</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
-              <div className="flex-1">
-                <p className="font-medium text-foreground">R$ 50K + Moto Honda</p>
-                <p className="text-sm text-foreground-muted">6.800 / 8.000 cotas vendidas</p>
-              </div>
-              <div className="text-right space-y-1">
-                <Badge variant="gold">Quase Esgotada</Badge>
-                <p className="text-xs text-foreground-muted">Sorteio: 30/12</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Kit Tech: iPhone + MacBook</p>
-                <p className="text-sm text-foreground-muted">1.200 / 3.000 cotas vendidas</p>
-              </div>
-              <div className="text-right space-y-1">
-                <Badge variant="outline">Ativa</Badge>
-                <p className="text-xs text-foreground-muted">Sorteio: 28/12</p>
-              </div>
-            </div>
-            
-            <Button variant="ghost" className="w-full mt-4">
-              Ver todas as rifas
-            </Button>
+            ) : (
+              <>
+                {stats.recentRaffles.map((raffle) => (
+                  <div key={raffle.id} className="flex items-center justify-between p-3 bg-background-secondary rounded-lg border border-border">
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{raffle.title}</p>
+                      <p className="text-sm text-foreground-muted">
+                        {raffle.soldTickets} / {raffle.totalTickets} cotas vendidas • {formatCurrency(raffle.revenue)}
+                      </p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      {getStatusBadge(raffle.status)}
+                      <p className="text-xs text-foreground-muted">
+                        {raffle.drawDate ? `Sorteio: ${formatDate(raffle.drawDate)}` : 'Sem data definida'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                
+                <Button 
+                  variant="ghost" 
+                  className="w-full mt-4"
+                  onClick={() => navigate('/admin/rifas')}
+                >
+                  Ver todas as rifas
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -196,32 +272,41 @@ const AdminDashboard = () => {
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-accent-success rounded-full mt-2"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Rifa "Civic Sport" atingiu 65% das vendas</p>
-                  <p className="text-xs text-foreground-muted">Há 2 horas</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {stats.totalRevenue > 0 
+                      ? `Sistema arrecadou ${formatCurrency(stats.totalRevenue)} total`
+                      : 'Sistema inicializado com sucesso'
+                    }
+                  </p>
+                  <p className="text-xs text-foreground-muted">Dados atualizados agora</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">234 novos participantes se cadastraram</p>
-                  <p className="text-xs text-foreground-muted">Há 4 horas</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {stats.totalParticipants} usuários cadastrados na plataforma
+                  </p>
+                  <p className="text-xs text-foreground-muted">Total de usuários</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-accent-gold rounded-full mt-2"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Sorteio "R$ 50K + Moto" às 20h</p>
-                  <p className="text-xs text-foreground-muted">Hoje às 20:00</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {stats.activeRaffles} rifas ativas no sistema
+                  </p>
+                  <p className="text-xs text-foreground-muted">Rifas em andamento</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-border rounded-full mt-2"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Backup automático realizado</p>
-                  <p className="text-xs text-foreground-muted">Há 6 horas</p>
+                  <p className="text-sm font-medium text-foreground">Sistema funcionando normalmente</p>
+                  <p className="text-xs text-foreground-muted">Status do sistema</p>
                 </div>
               </div>
             </div>
@@ -233,13 +318,38 @@ const AdminDashboard = () => {
                 Tarefas Pendentes
               </h4>
               <div className="space-y-2">
+                {stats.activeRaffles === 0 ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-foreground-muted">Criar primeira rifa do sistema</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate('/admin/rifas/nova')}
+                    >
+                      Criar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-foreground-muted">Gerenciar rifas ativas</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate('/admin/rifas')}
+                    >
+                      Ver rifas
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-foreground-muted">Aprovar 5 novos participantes</span>
-                  <Button variant="ghost" size="sm">Revisar</Button>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-foreground-muted">Configurar nova rifa "Casa dos Sonhos"</span>
-                  <Button variant="ghost" size="sm">Configurar</Button>
+                  <span className="text-foreground-muted">Visualizar relatórios de desempenho</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/admin/relatorios')}
+                  >
+                    Relatórios
+                  </Button>
                 </div>
               </div>
             </div>
@@ -271,20 +381,24 @@ const AdminDashboard = () => {
             <div className="p-4 bg-accent-gold/10 border border-accent-gold/20 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <Clock className="w-4 h-4 text-accent-gold" />
-                <span className="text-sm font-medium text-accent-gold">3 Sorteios Hoje</span>
+                <span className="text-sm font-medium text-accent-gold">
+                  {stats.activeRaffles} Rifas Ativas
+                </span>
               </div>
               <p className="text-xs text-foreground-muted">
-                Verificar configurações antes dos sorteios
+                {stats.activeRaffles > 0 ? 'Rifas em andamento no sistema' : 'Nenhuma rifa ativa no momento'}
               </p>
             </div>
             
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Alto Engajamento</span>
+                <span className="text-sm font-medium text-primary">
+                  {stats.totalParticipants} Usuários
+                </span>
               </div>
               <p className="text-xs text-foreground-muted">
-                +40% de participações esta semana
+                Total de usuários cadastrados
               </p>
             </div>
           </div>

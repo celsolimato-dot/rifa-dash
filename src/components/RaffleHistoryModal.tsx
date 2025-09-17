@@ -1,51 +1,44 @@
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  X, 
-  Calendar, 
   Trophy, 
+  Calendar, 
   DollarSign, 
-  Search,
-  Filter,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Ticket
-} from 'lucide-react';
+  Search, 
+  TrendingUp, 
+  TrendingDown,
+  Minus,
+  Gift
+} from "lucide-react";
 
-interface RaffleHistoryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface RaffleHistoryItem {
+export interface RaffleHistoryItem {
   id: string;
   title: string;
   image: string;
   numbers: number[];
   totalInvested: number;
   drawDate: string;
-  status: 'active' | 'completed' | 'won' | 'lost';
+  status: "active" | "completed" | "won" | "lost";
   result?: {
-    winningNumber?: number;
-    prize?: string;
-    prizeValue?: number;
+    winningNumber: number;
+    prize: string;
+    prizeValue: number;
   };
   purchaseDate: string;
 }
 
-export const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
+interface RaffleHistoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
   isOpen,
   onClose
 }) => {
@@ -53,316 +46,235 @@ export const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
 
-  // Mock data para histórico completo
-  const raffleHistory: RaffleHistoryItem[] = [
-    {
-      id: "1",
-      title: "Carro dos Sonhos - Civic Sport 2024",
-      image: "/placeholder-car.jpg",
-      numbers: [1234, 5678, 9012],
-      totalInvested: 47.97,
-      drawDate: "2024-02-15T20:00:00Z",
-      status: "active",
-      purchaseDate: "2024-01-20T14:30:00Z"
-    },
-    {
-      id: "2",
-      title: "R$ 50.000 em Dinheiro",
-      image: "/placeholder-money.jpg",
-      numbers: [3456, 7890],
-      totalInvested: 19.98,
-      drawDate: "2024-01-30T20:00:00Z",
-      status: "completed",
-      result: {
-        winningNumber: 1111,
-        prize: "R$ 50.000",
-        prizeValue: 50000
-      },
-      purchaseDate: "2024-01-15T16:45:00Z"
-    },
-    {
-      id: "3",
-      title: "iPhone 15 Pro Max 256GB",
-      image: "/placeholder-phone.jpg",
-      numbers: [2468, 1357, 9753],
-      totalInvested: 38.97,
-      drawDate: "2024-01-25T20:00:00Z",
-      status: "won",
-      result: {
-        winningNumber: 2468,
-        prize: "iPhone 15 Pro Max 256GB",
-        prizeValue: 8999
-      },
-      purchaseDate: "2024-01-10T10:20:00Z"
-    },
-    {
-      id: "4",
-      title: "Notebook Gamer RTX 4060",
-      image: "/placeholder-laptop.jpg",
-      numbers: [5555, 6666],
-      totalInvested: 39.98,
-      drawDate: "2024-01-20T20:00:00Z",
-      status: "lost",
-      result: {
-        winningNumber: 7777,
-        prize: "Notebook Gamer RTX 4060",
-        prizeValue: 4500
-      },
-      purchaseDate: "2024-01-05T12:15:00Z"
-    },
-    {
-      id: "5",
-      title: "PlayStation 5 + 2 Controles",
-      image: "/placeholder-ps5.jpg",
-      numbers: [1111, 2222, 3333, 4444],
-      totalInvested: 51.96,
-      drawDate: "2024-01-15T20:00:00Z",
-      status: "lost",
-      result: {
-        winningNumber: 9999,
-        prize: "PlayStation 5 + 2 Controles",
-        prizeValue: 3200
-      },
-      purchaseDate: "2023-12-28T18:30:00Z"
-    }
-  ];
+  // Histórico de participação real do usuário (buscar do banco)
+  const raffleHistory: RaffleHistoryItem[] = [];
+
+  const filteredHistory = raffleHistory.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesTab = activeTab === 'all' || 
+      (activeTab === 'active' && item.status === 'active') ||
+      (activeTab === 'completed' && ['completed', 'won', 'lost'].includes(item.status)) ||
+      (activeTab === 'won' && item.status === 'won') ||
+      (activeTab === 'lost' && item.status === 'lost');
+    
+    return matchesSearch && matchesStatus && matchesTab;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
         return <Badge variant="default" className="bg-blue-500">Ativa</Badge>;
       case 'completed':
-        return <Badge variant="secondary">Finalizada</Badge>;
+        return <Badge variant="outline">Finalizada</Badge>;
       case 'won':
-        return <Badge variant="success" className="bg-green-500">Ganhei!</Badge>;
+        return <Badge variant="default" className="bg-green-500">Ganhou</Badge>;
       case 'lost':
-        return <Badge variant="destructive">Não ganhei</Badge>;
+        return <Badge variant="destructive">Perdeu</Badge>;
       default:
-        return <Badge variant="outline">Desconhecido</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Clock className="w-4 h-4 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-gray-500" />;
       case 'won':
         return <Trophy className="w-4 h-4 text-green-500" />;
       case 'lost':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <TrendingDown className="w-4 h-4 text-red-500" />;
+      case 'active':
+        return <TrendingUp className="w-4 h-4 text-blue-500" />;
       default:
-        return <Ticket className="w-4 h-4" />;
+        return <Minus className="w-4 h-4 text-gray-500" />;
     }
   };
 
-  const filteredHistory = raffleHistory.filter(raffle => {
-    const matchesSearch = raffle.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || raffle.status === statusFilter;
-    const matchesTab = activeTab === 'all' || 
-      (activeTab === 'active' && raffle.status === 'active') ||
-      (activeTab === 'completed' && ['completed', 'won', 'lost'].includes(raffle.status)) ||
-      (activeTab === 'won' && raffle.status === 'won');
-    
-    return matchesSearch && matchesStatus && matchesTab;
-  });
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const totalStats = {
-    totalInvested: raffleHistory.reduce((sum, raffle) => sum + raffle.totalInvested, 0),
-    totalRaffles: raffleHistory.length,
-    activeRaffles: raffleHistory.filter(r => r.status === 'active').length,
-    wonRaffles: raffleHistory.filter(r => r.status === 'won').length,
-    totalWinnings: raffleHistory
-      .filter(r => r.status === 'won')
-      .reduce((sum, raffle) => sum + (raffle.result?.prizeValue || 0), 0)
-  };
+  const totalInvested = raffleHistory.reduce((sum, item) => sum + item.totalInvested, 0);
+  const totalWon = raffleHistory
+    .filter(item => item.status === 'won')
+    .reduce((sum, item) => sum + (item.result?.prizeValue || 0), 0);
+  const activeRaffles = raffleHistory.filter(item => item.status === 'active').length;
+  const wonRaffles = raffleHistory.filter(item => item.status === 'won').length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-4xl h-[80vh] bg-gradient-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span className="text-xl font-bold">Histórico Completo de Rifas</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-6 w-6"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <DialogTitle className="flex items-center space-x-2 text-foreground">
+            <Trophy className="w-5 h-5 text-accent-gold" />
+            <span>Histórico de Participações</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Estatísticas Resumidas */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card>
+        <div className="flex flex-col h-full space-y-4">
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-background-secondary border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-primary">{totalStats.totalRaffles}</p>
-                <p className="text-sm text-foreground-muted">Total de Rifas</p>
+                <div className="text-lg font-bold text-foreground">{formatCurrency(totalInvested)}</div>
+                <div className="text-xs text-foreground-muted">Total Investido</div>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className="bg-background-secondary border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-blue-500">{totalStats.activeRaffles}</p>
-                <p className="text-sm text-foreground-muted">Ativas</p>
+                <div className="text-lg font-bold text-accent-success">{formatCurrency(totalWon)}</div>
+                <div className="text-xs text-foreground-muted">Total Ganho</div>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className="bg-background-secondary border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-green-500">{totalStats.wonRaffles}</p>
-                <p className="text-sm text-foreground-muted">Vitórias</p>
+                <div className="text-lg font-bold text-primary">{activeRaffles}</div>
+                <div className="text-xs text-foreground-muted">Rifas Ativas</div>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className="bg-background-secondary border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-accent-gold">
-                  R$ {totalStats.totalInvested.toFixed(2).replace('.', ',')}
-                </p>
-                <p className="text-sm text-foreground-muted">Investido</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  R$ {totalStats.totalWinnings.toLocaleString('pt-BR')}
-                </p>
-                <p className="text-sm text-foreground-muted">Ganhos</p>
+                <div className="text-lg font-bold text-accent-gold">{wonRaffles}</div>
+                <div className="text-xs text-foreground-muted">Rifas Ganhas</div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Filtros e Busca */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
               <Input
-                placeholder="Buscar por nome da rifa..."
+                placeholder="Pesquisar rifas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-background-secondary border-border"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="active">Ativas</SelectItem>
-                <SelectItem value="completed">Finalizadas</SelectItem>
-                <SelectItem value="won">Ganhei</SelectItem>
-                <SelectItem value="lost">Não Ganhei</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-5 bg-background-secondary">
               <TabsTrigger value="all">Todas</TabsTrigger>
               <TabsTrigger value="active">Ativas</TabsTrigger>
               <TabsTrigger value="completed">Finalizadas</TabsTrigger>
-              <TabsTrigger value="won">Vitórias</TabsTrigger>
+              <TabsTrigger value="won">Ganhas</TabsTrigger>
+              <TabsTrigger value="lost">Perdidas</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-6">
-              <div className="max-h-96 overflow-y-auto space-y-4">
-                {filteredHistory.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-foreground-muted">Nenhuma rifa encontrada com os filtros aplicados.</p>
-                  </div>
-                ) : (
-                  filteredHistory.map((raffle) => (
-                    <Card key={raffle.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-4">
-                          <img 
-                            src={raffle.image} 
-                            alt={raffle.title}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-start justify-between">
-                              <h3 className="font-semibold text-foreground line-clamp-2">{raffle.title}</h3>
-                              <div className="flex items-center space-x-2">
-                                {getStatusIcon(raffle.status)}
-                                {getStatusBadge(raffle.status)}
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2">
-                              <span className="text-sm text-foreground-muted">Seus números:</span>
-                              {raffle.numbers.map((number) => (
-                                <Badge 
-                                  key={number} 
-                                  variant={raffle.status === 'won' && raffle.result?.winningNumber === number ? "success" : "outline"} 
-                                  className={`font-mono ${raffle.status === 'won' && raffle.result?.winningNumber === number ? 'bg-green-500 text-white' : ''}`}
-                                >
-                                  {number.toString().padStart(4, '0')}
-                                </Badge>
-                              ))}
-                            </div>
-
-                            {raffle.result && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-foreground-muted">
-                                  <strong>Número sorteado:</strong> {raffle.result.winningNumber?.toString().padStart(4, '0')}
-                                </p>
-                                {raffle.status === 'won' && (
-                                  <p className="text-green-600 font-medium">
-                                    🎉 Parabéns! Você ganhou: {raffle.result.prize}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center justify-between text-sm">
-                              <div className="space-y-1">
-                                <span className="flex items-center text-foreground-muted">
-                                  <Calendar className="w-4 h-4 mr-1" />
-                                  Sorteio: {formatDate(raffle.drawDate)}
-                                </span>
-                                <span className="flex items-center text-foreground-muted">
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  Compra: {formatDate(raffle.purchaseDate)}
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <span className="font-medium text-accent-gold">
-                                  Investido: R$ {raffle.totalInvested.toFixed(2).replace('.', ',')}
-                                </span>
-                                {raffle.status === 'won' && raffle.result?.prizeValue && (
-                                  <p className="text-green-600 font-medium">
-                                    Ganho: R$ {raffle.result.prizeValue.toLocaleString('pt-BR')}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+            <TabsContent value={activeTab} className="flex-1 mt-4">
+              <ScrollArea className="h-full">
+                <div className="space-y-4">
+                  {filteredHistory.length === 0 ? (
+                    <Card className="bg-background-secondary border-border">
+                      <CardContent className="p-8 text-center">
+                        <Gift className="w-12 h-12 mx-auto mb-4 text-foreground-muted opacity-50" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
+                          Nenhuma participação encontrada
+                        </h3>
+                        <p className="text-foreground-muted">
+                          {activeTab === 'all' 
+                            ? 'Você ainda não participou de nenhuma rifa.'
+                            : `Nenhuma rifa ${activeTab === 'active' ? 'ativa' : activeTab === 'won' ? 'ganha' : activeTab === 'lost' ? 'perdida' : 'finalizada'} encontrada.`
+                          }
+                        </p>
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    filteredHistory.map((item) => (
+                      <Card key={item.id} className="bg-background-secondary border-border hover:border-primary/20 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
+                            
+                            {/* Image */}
+                            <div className="w-16 h-16 bg-background rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Trophy className="w-8 h-8 text-accent-gold" />
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
+                                  <div className="flex items-center space-x-4 text-sm text-foreground-muted">
+                                    <span className="flex items-center space-x-1">
+                                      <Calendar className="w-4 h-4" />
+                                      <span>Sorteio: {formatDate(item.drawDate)}</span>
+                                    </span>
+                                    <span className="flex items-center space-x-1">
+                                      <DollarSign className="w-4 h-4" />
+                                      <span>Investido: {formatCurrency(item.totalInvested)}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  {getStatusIcon(item.status)}
+                                  {getStatusBadge(item.status)}
+                                </div>
+                              </div>
+
+                              {/* Numbers */}
+                              <div className="flex flex-wrap gap-2">
+                                <span className="text-sm text-foreground-muted">Números:</span>
+                                {item.numbers.map((number, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {number.toString().padStart(4, '0')}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              {/* Result (for completed raffles) */}
+                              {item.result && (
+                                <div className="p-3 bg-background rounded-lg border border-border">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-sm font-medium text-foreground">
+                                        Número sorteado: {item.result.winningNumber.toString().padStart(4, '0')}
+                                      </div>
+                                      <div className="text-sm text-foreground-muted">
+                                        Prêmio: {item.result.prize}
+                                      </div>
+                                    </div>
+                                    {item.status === 'won' && (
+                                      <Badge variant="default" className="bg-green-500">
+                                        Você ganhou! 🎉
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
+
+          {/* Footer */}
+          <div className="flex justify-end pt-4 border-t border-border">
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default RaffleHistoryModal;

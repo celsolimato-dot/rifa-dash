@@ -84,10 +84,10 @@ interface SystemSettings {
   };
 }
 
-// Mock data
+// Configurações reais do sistema (integrar com banco)
 const initialSettings: SystemSettings = {
   general: {
-    siteName: "RifaSystem Pro",
+    siteName: "RIFOU.NET",
     siteDescription: "Sistema completo de gerenciamento de rifas online",
     contactEmail: "contato@rifasystem.com",
     contactPhone: "(11) 99999-9999",

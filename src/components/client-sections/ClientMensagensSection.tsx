@@ -1,135 +1,94 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Search,
-  MessageCircle,
-  Calendar,
-  Eye,
-  EyeOff,
-  Trash2,
-  Archive,
-  Star,
-  StarOff,
-  Bell,
-  BellOff
+  Mail, 
+  MailOpen, 
+  Search, 
+  Star, 
+  StarOff, 
+  Calendar, 
+  Gift,
+  Trophy,
+  CreditCard,
+  Info
 } from "lucide-react";
+
+interface Message {
+  id: number;
+  subject: string;
+  content: string;
+  sender: string;
+  date: string;
+  read: boolean;
+  starred: boolean;
+  category: 'welcome' | 'promotion' | 'winner' | 'purchase' | 'result' | 'general';
+  priority: 'low' | 'medium' | 'high';
+  prize?: string;
+  numbers?: number[];
+  winningNumber?: number;
+}
 
 export const ClientMensagensSection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - em produção viria de uma API
-  const messages = [
-    {
-      id: 1,
-      subject: 'Parabéns! Você ganhou o prêmio!',
-      content: 'Olá! Temos uma ótima notícia para você. Você foi o ganhador da rifa do Smartwatch Apple Watch Series 9. Seu número sorteado foi o 19. Entre em contato conosco para retirar seu prêmio.',
-      sender: 'Sistema Rifa Dash',
-      date: '2024-01-10T20:30:00',
-      read: true,
-      starred: true,
-      category: 'premio',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      subject: 'Nova rifa disponível: iPhone 15 Pro Max',
-      content: 'Uma nova rifa incrível está disponível! iPhone 15 Pro Max 256GB por apenas R$ 25,00 o número. Não perca essa oportunidade única de concorrer a este prêmio incrível.',
-      sender: 'Equipe Rifa Dash',
-      date: '2024-01-08T14:15:00',
-      read: true,
-      starred: false,
-      category: 'promocao',
-      priority: 'medium'
-    },
-    {
-      id: 3,
-      subject: 'Confirmação de participação - Notebook Gamer',
-      content: 'Sua participação na rifa do Notebook Gamer Acer Nitro 5 foi confirmada com sucesso. Seus números são: 08 e 34. O sorteio será realizado no dia 30/01/2024 às 21:00.',
-      sender: 'Sistema Rifa Dash',
-      date: '2024-01-08T16:50:00',
-      read: false,
-      starred: false,
-      category: 'confirmacao',
-      priority: 'medium'
-    },
-    {
-      id: 4,
-      subject: 'Lembrete: Sorteio hoje às 20:00',
-      content: 'Não esqueça! Hoje às 20:00 será realizado o sorteio da rifa do Smartwatch Apple Watch Series 9. Você está participando com os números 07 e 19. Boa sorte!',
-      sender: 'Sistema Rifa Dash',
-      date: '2024-01-10T18:00:00',
-      read: true,
-      starred: false,
-      category: 'lembrete',
-      priority: 'high'
-    },
-    {
-      id: 5,
-      subject: 'Promoção especial: 20% de desconto',
-      content: 'Por tempo limitado, você tem 20% de desconto em todas as rifas. Use o código DESCONTO20 e aproveite esta oportunidade única para participar de mais rifas com preços especiais.',
-      sender: 'Marketing Rifa Dash',
-      date: '2024-01-05T10:30:00',
-      read: true,
-      starred: false,
-      category: 'promocao',
-      priority: 'low'
-    },
-    {
-      id: 6,
-      subject: 'Bem-vindo ao Rifa Dash!',
-      content: 'Seja bem-vindo ao Rifa Dash! Estamos muito felizes em tê-lo conosco. Explore nossas rifas incríveis e tenha a chance de ganhar prêmios fantásticos. Boa sorte!',
-      sender: 'Equipe Rifa Dash',
-      date: '2024-01-01T09:00:00',
-      read: true,
-      starred: true,
-      category: 'boas-vindas',
-      priority: 'medium'
-    }
-  ];
-
-  const notifications = [
-    {
-      id: 1,
-      title: 'Novo sorteio em 2 horas',
-      description: 'Rifa do iPhone 15 Pro Max será sorteada hoje às 20:00',
-      date: '2024-01-15T18:00:00',
-      read: false,
-      type: 'sorteio'
-    },
-    {
-      id: 2,
-      title: 'Pagamento confirmado',
-      description: 'Sua participação na rifa do Notebook foi confirmada',
-      date: '2024-01-15T16:30:00',
-      read: true,
-      type: 'pagamento'
-    },
-    {
-      id: 3,
-      title: 'Nova rifa disponível',
-      description: 'Vale Compras R$ 500 - Participe agora!',
-      date: '2024-01-15T14:00:00',
-      read: false,
-      type: 'nova-rifa'
-    }
-  ];
+  // Mensagens reais do banco (integrar com realMessageService)
+  const messages: Message[] = [];
 
   const filteredMessages = messages.filter(message =>
     message.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.sender.toLowerCase().includes(searchTerm.toLowerCase())
+    message.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const unreadMessages = messages.filter(msg => !msg.read);
-  const starredMessages = messages.filter(msg => msg.starred);
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'winner':
+        return <Trophy className="w-4 h-4 text-accent-gold" />;
+      case 'promotion':
+        return <Gift className="w-4 h-4 text-primary" />;
+      case 'purchase':
+        return <CreditCard className="w-4 h-4 text-accent-success" />;
+      case 'result':
+        return <Info className="w-4 h-4 text-blue-500" />;
+      default:
+        return <Mail className="w-4 h-4 text-foreground-muted" />;
+    }
+  };
+
+  const getCategoryBadge = (category: string) => {
+    switch (category) {
+      case 'winner':
+        return <Badge variant="default" className="bg-accent-gold text-black">Prêmio</Badge>;
+      case 'promotion':
+        return <Badge variant="default" className="bg-primary">Promoção</Badge>;
+      case 'purchase':
+        return <Badge variant="default" className="bg-accent-success">Compra</Badge>;
+      case 'result':
+        return <Badge variant="outline">Resultado</Badge>;
+      case 'welcome':
+        return <Badge variant="secondary">Boas-vindas</Badge>;
+      default:
+        return <Badge variant="outline">Geral</Badge>;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'border-l-red-500';
+      case 'medium':
+        return 'border-l-yellow-500';
+      default:
+        return 'border-l-green-500';
+    }
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -138,247 +97,197 @@ export const ClientMensagensSection: React.FC = () => {
     });
   };
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'premio': return 'bg-green-100 text-green-800';
-      case 'promocao': return 'bg-blue-100 text-blue-800';
-      case 'confirmacao': return 'bg-yellow-100 text-yellow-800';
-      case 'lembrete': return 'bg-orange-100 text-orange-800';
-      case 'boas-vindas': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return '🔴';
-      case 'medium': return '🟡';
-      case 'low': return '🟢';
-      default: return '';
-    }
-  };
-
-  const MessageCard = ({ message }: { message: any }) => (
-    <Card className={`bg-gradient-card border-border cursor-pointer transition-all hover:shadow-md ${
-      !message.read ? 'ring-2 ring-primary/20' : ''
-    }`}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-2">
-              <h4 className={`font-medium truncate ${
-                !message.read ? 'text-foreground font-semibold' : 'text-foreground'
-              }`}>
-                {message.subject}
-              </h4>
-              {!message.read && (
-                <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-              )}
-              {message.starred && (
-                <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-              )}
-              <span className="text-xs">{getPriorityIcon(message.priority)}</span>
-            </div>
-            
-            <p className="text-sm text-foreground-muted line-clamp-2 mb-3">
-              {message.content}
-            </p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-foreground-muted">{message.sender}</span>
-                <Badge variant="outline" className={getCategoryColor(message.category)}>
-                  {message.category}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-3 h-3 text-muted-foreground" />
-                <span className="text-xs text-foreground-muted">
-                  {formatDate(message.date)}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-1 ml-4">
-            <Button variant="ghost" size="sm">
-              {message.read ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </Button>
-            <Button variant="ghost" size="sm">
-              {message.starred ? <StarOff className="w-4 h-4" /> : <Star className="w-4 h-4" />}
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Archive className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const NotificationCard = ({ notification }: { notification: any }) => (
-    <Card className={`bg-gradient-card border-border ${
-      !notification.read ? 'ring-2 ring-primary/20' : ''
-    }`}>
-      <CardContent className="p-4">
-        <div className="flex items-start space-x-3">
-          <div className={`w-2 h-2 rounded-full mt-2 ${
-            !notification.read ? 'bg-primary' : 'bg-muted-foreground'
-          }`} />
-          
-          <div className="flex-1">
-            <h4 className={`font-medium ${
-              !notification.read ? 'text-foreground font-semibold' : 'text-foreground'
-            }`}>
-              {notification.title}
-            </h4>
-            <p className="text-sm text-foreground-muted mt-1">
-              {notification.description}
-            </p>
-            <div className="flex items-center space-x-2 mt-2">
-              <Calendar className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-foreground-muted">
-                {formatDate(notification.date)}
-              </span>
-            </div>
-          </div>
-          
-          <Button variant="ghost" size="sm">
-            {notification.read ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const unreadCount = messages.filter(m => !m.read).length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Mensagens</h1>
-          <p className="text-foreground-muted">Central de comunicações e notificações</p>
-        </div>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-foreground">Mensagens</h1>
+        <p className="text-foreground-muted">
+          Acompanhe todas as suas mensagens e notificações
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-card border-border">
+          <CardContent className="p-4 text-center">
+            <Mail className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold text-foreground">{messages.length}</div>
+            <div className="text-sm text-foreground-muted">Total de Mensagens</div>
+          </CardContent>
+        </Card>
         
-        <div className="flex space-x-2">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Card className="bg-gradient-card border-border">
+          <CardContent className="p-4 text-center">
+            <MailOpen className="w-8 h-8 mx-auto mb-2 text-accent-success" />
+            <div className="text-2xl font-bold text-foreground">{unreadCount}</div>
+            <div className="text-sm text-foreground-muted">Não Lidas</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-card border-border">
+          <CardContent className="p-4 text-center">
+            <Star className="w-8 h-8 mx-auto mb-2 text-accent-gold" />
+            <div className="text-2xl font-bold text-foreground">
+              {messages.filter(m => m.starred).length}
+            </div>
+            <div className="text-sm text-foreground-muted">Favoritas</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <Card className="bg-gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Search className="w-5 h-5 text-primary" />
+            <span>Pesquisar Mensagens</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
             <Input
-              placeholder="Buscar mensagens..."
+              placeholder="Digite para pesquisar mensagens..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-background-secondary border-border"
             />
           </div>
-          <Button variant="outline">
-            Marcar todas como lidas
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground-muted">
-              Total de Mensagens
-            </CardTitle>
-            <MessageCircle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{messages.length}</div>
-            <p className="text-xs text-foreground-muted">
-              Todas as mensagens recebidas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground-muted">
-              Não Lidas
-            </CardTitle>
-            <Eye className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{unreadMessages.length}</div>
-            <p className="text-xs text-foreground-muted">
-              Mensagens pendentes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground-muted">
-              Favoritas
-            </CardTitle>
-            <Star className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{starredMessages.length}</div>
-            <p className="text-xs text-foreground-muted">
-              Mensagens marcadas
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="mensagens" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="mensagens">
-            Mensagens ({filteredMessages.length})
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes">
-            Notificações ({notifications.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="mensagens" className="space-y-4">
-          {filteredMessages.length > 0 ? (
-            filteredMessages.map((message) => (
-              <MessageCard key={message.id} message={message} />
-            ))
-          ) : (
-            <Card className="bg-gradient-card border-border">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <MessageCircle className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhuma mensagem encontrada
+      {/* Messages List */}
+      <Card className="bg-gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center space-x-2">
+              <Mail className="w-5 h-5 text-primary" />
+              <span>Suas Mensagens</span>
+            </span>
+            {unreadCount > 0 && (
+              <Badge variant="destructive">{unreadCount} não lidas</Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Todas as suas mensagens e notificações importantes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[600px]">
+            {filteredMessages.length === 0 ? (
+              <div className="text-center py-12">
+                <Mail className="w-16 h-16 mx-auto mb-4 text-foreground-muted opacity-50" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {searchTerm ? 'Nenhuma mensagem encontrada' : 'Nenhuma mensagem ainda'}
                 </h3>
-                <p className="text-foreground-muted text-center">
+                <p className="text-foreground-muted">
                   {searchTerm 
-                    ? 'Tente ajustar os termos de busca.'
-                    : 'Suas mensagens aparecerão aqui.'
+                    ? 'Tente ajustar sua pesquisa.' 
+                    : 'Suas mensagens aparecerão aqui quando você recebê-las.'
                   }
                 </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="notificacoes" className="space-y-4">
-          {notifications.length > 0 ? (
-            notifications.map((notification) => (
-              <NotificationCard key={notification.id} notification={notification} />
-            ))
-          ) : (
-            <Card className="bg-gradient-card border-border">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Bell className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhuma notificação
-                </h3>
-                <p className="text-foreground-muted text-center">
-                  Suas notificações aparecerão aqui.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredMessages.map((message, index) => (
+                  <div key={message.id}>
+                    <Card className={`
+                      bg-background-secondary border-border hover:border-primary/20 transition-all cursor-pointer
+                      border-l-4 ${getPriorityColor(message.priority)}
+                      ${!message.read ? 'bg-primary/5' : ''}
+                    `}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between space-x-4">
+                          <div className="flex items-start space-x-3 flex-1">
+                            {getCategoryIcon(message.category)}
+                            
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h3 className={`font-semibold ${!message.read ? 'text-foreground' : 'text-foreground-muted'}`}>
+                                  {message.subject}
+                                </h3>
+                                <div className="flex items-center space-x-2">
+                                  {getCategoryBadge(message.category)}
+                                  <Button variant="ghost" size="sm" className="p-1">
+                                    {message.starred ? (
+                                      <Star className="w-4 h-4 fill-accent-gold text-accent-gold" />
+                                    ) : (
+                                      <StarOff className="w-4 h-4 text-foreground-muted" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <p className="text-sm text-foreground-muted line-clamp-2">
+                                {message.content}
+                              </p>
+                              
+                              {/* Special content for different message types */}
+                              {message.prize && (
+                                <div className="p-2 bg-accent-gold/10 border border-accent-gold/20 rounded-lg">
+                                  <div className="flex items-center space-x-2">
+                                    <Trophy className="w-4 h-4 text-accent-gold" />
+                                    <span className="text-sm font-medium text-accent-gold">
+                                      Prêmio: {message.prize}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {message.numbers && (
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="text-xs text-foreground-muted">Números:</span>
+                                  {message.numbers.map((number, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
+                                      {number.toString().padStart(4, '0')}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {message.winningNumber && (
+                                <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                                  <div className="flex items-center space-x-2">
+                                    <Info className="w-4 h-4 text-primary" />
+                                    <span className="text-sm text-primary">
+                                      Número sorteado: {message.winningNumber.toString().padStart(4, '0')}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center justify-between text-xs text-foreground-muted">
+                                <span className="flex items-center space-x-1">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>{formatDate(message.date)}</span>
+                                </span>
+                                <span>De: {message.sender}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            {!message.read && (
+                              <div className="w-2 h-2 bg-primary rounded-full"></div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {index < filteredMessages.length - 1 && (
+                      <Separator className="my-2" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </div>
   );
 };
