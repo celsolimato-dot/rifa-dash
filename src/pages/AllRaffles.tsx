@@ -150,8 +150,21 @@ const AllRaffles = () => {
                   {getStatusBadge(raffle.status)}
                 </div>
                 
-                <div className="aspect-video bg-background-secondary rounded-lg flex items-center justify-center">
-                  <Trophy className="w-12 h-12 text-foreground-muted" />
+                <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
+                  {raffle.image_url ? (
+                    <img 
+                      src={raffle.image_url} 
+                      alt={raffle.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`flex items-center justify-center w-full h-full ${raffle.image_url ? 'hidden' : ''}`}>
+                    <Trophy className="w-12 h-12 text-foreground-muted" />
+                  </div>
                 </div>
               </CardHeader>
               
@@ -202,8 +215,21 @@ const AllRaffles = () => {
                     </DialogHeader>
                     {selectedRaffle && (
                       <div className="space-y-6">
-                        <div className="aspect-video bg-background-secondary rounded-lg flex items-center justify-center">
-                          <Trophy className="w-16 h-16 text-foreground-muted" />
+                        <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
+                          {selectedRaffle.image_url ? (
+                            <img 
+                              src={selectedRaffle.image_url} 
+                              alt={selectedRaffle.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`flex items-center justify-center w-full h-full ${selectedRaffle.image_url ? 'hidden' : ''}`}>
+                            <Trophy className="w-16 h-16 text-foreground-muted" />
+                          </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
