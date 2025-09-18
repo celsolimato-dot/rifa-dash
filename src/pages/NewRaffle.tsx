@@ -177,18 +177,30 @@ export default function NewRaffle() {
     fileInputRef.current?.click();
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setInstitutionLogo(file);
-      const logoUrl = URL.createObjectURL(file);
-      setFormData(prev => ({
-        ...prev,
-        institution: {
-          ...prev.institution,
-          logo: logoUrl
-        }
-      }));
+    if (!file) return;
+
+    setUploadingImage(true);
+    
+    try {
+      const uploadedUrl = await uploadImageToStorage(file);
+      if (uploadedUrl) {
+        setInstitutionLogo(file);
+        setFormData(prev => ({
+          ...prev,
+          institution: {
+            ...prev.institution,
+            logo: uploadedUrl
+          }
+        }));
+        toast.success("Logo da instituição adicionado com sucesso!");
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast.error('Erro ao fazer upload do logo');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
