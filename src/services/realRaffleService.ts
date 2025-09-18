@@ -407,6 +407,46 @@ export class RealRaffleService {
     }
   }
 
+  static async getRevenueDistribution() {
+    try {
+      const { data: raffles, error } = await supabase
+        .from('raffles')
+        .select('category, revenue');
+      
+      if (error) throw error;
+      
+      // Agrupar receita por categoria
+      const categoryRevenue = new Map();
+      let totalRevenue = 0;
+      
+      raffles?.forEach(raffle => {
+        const category = raffle.category || 'Outros';
+        const revenue = raffle.revenue || 0;
+        
+        if (!categoryRevenue.has(category)) {
+          categoryRevenue.set(category, 0);
+        }
+        
+        categoryRevenue.set(category, categoryRevenue.get(category) + revenue);
+        totalRevenue += revenue;
+      });
+      
+      // Converter para array e calcular percentuais
+      const distribution = Array.from(categoryRevenue.entries())
+        .map(([category, amount]) => ({
+          category,
+          amount,
+          percentage: totalRevenue > 0 ? (amount / totalRevenue) * 100 : 0
+        }))
+        .sort((a, b) => b.amount - a.amount);
+      
+      return distribution;
+    } catch (error) {
+      console.error('Error getting revenue distribution:', error);
+      return [];
+    }
+  }
+
   private static getTimeAgo(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();

@@ -51,6 +51,7 @@ export default function Reports() {
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [topRaffles, setTopRaffles] = useState<TopRaffle[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [revenueDistribution, setRevenueDistribution] = useState<any[]>([]);
   const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics>({
     total: 0,
     thisMonth: 0,
@@ -82,7 +83,8 @@ export default function Reports() {
         ticketsData,
         participantsData,
         conversionData,
-        activityData
+        activityData,
+        distributionData
       ] = await Promise.all([
         RaffleService.getRevenueMetrics(),
         RaffleService.getSalesData(),
@@ -90,7 +92,8 @@ export default function Reports() {
         RaffleService.getTicketsMetrics(),
         RaffleService.getParticipantsMetrics(),
         RaffleService.getConversionRate(),
-        RaffleService.getRecentActivity()
+        RaffleService.getRecentActivity(),
+        RaffleService.getRevenueDistribution()
       ]);
 
       // Atualizar métricas de receita
@@ -134,6 +137,9 @@ export default function Reports() {
 
       // Atualizar atividades recentes
       setRecentActivity(activityData);
+
+      // Atualizar distribuição de receita
+      setRevenueDistribution(distributionData);
 
     } catch (error) {
       console.error('Erro ao carregar dados dos relatórios:', error);
@@ -587,27 +593,37 @@ export default function Reports() {
                 <CardTitle>Distribuição de Receita</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { category: "Eletrônicos", percentage: 45, amount: 57150 },
-                    { category: "Veículos", percentage: 30, amount: 38100 },
-                    { category: "Casa & Decoração", percentage: 15, amount: 19050 },
-                    { category: "Outros", percentage: 10, amount: 12700 }
-                  ].map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>{item.category}</span>
-                        <span className="font-medium">{formatCurrency(item.amount)}</span>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${item.percentage}%` }}
-                        />
+                    ))}
+                  </div>
+                ) : revenueDistribution.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-foreground-muted">Nenhum dado de receita encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {revenueDistribution.map((item, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>{item.category}</span>
+                          <span className="font-medium">{formatCurrency(item.amount)}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${item.percentage.toFixed(1)}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
