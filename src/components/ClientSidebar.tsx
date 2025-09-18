@@ -76,7 +76,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   };
 
   return (
-    <div className="w-64 bg-gradient-card border-r border-border h-full flex flex-col">
+    <div className="fixed left-0 top-0 w-64 bg-gradient-card border-r border-border h-screen flex flex-col z-40">
       {/* Header do Sidebar */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center space-x-3">
@@ -106,7 +106,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
       </div>
 
       {/* Menu de Navegação */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => (
           <Button
             key={item.id}

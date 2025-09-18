@@ -64,7 +64,7 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background">
       {/* Sidebar */}
       <ClientSidebar
         activeSection={currentSection}
@@ -72,7 +72,7 @@ const ClientDashboard = () => {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="ml-64 flex flex-col min-h-screen">
         {/* Header com Breadcrumb */}
         <header className="bg-background-secondary border-b border-border p-4 lg:p-6">
           <div className="flex items-center justify-between">
