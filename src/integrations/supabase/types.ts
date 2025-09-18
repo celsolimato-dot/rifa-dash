@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_settings: {
+        Row: {
+          commission_percentage: number
+          created_at: string
+          id: string
+          min_payout: number
+          updated_at: string
+        }
+        Insert: {
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          min_payout?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          min_payout?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      affiliates: {
+        Row: {
+          affiliate_code: string
+          available_balance: number
+          created_at: string
+          id: string
+          status: string
+          total_commission: number
+          total_referrals: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          affiliate_code: string
+          available_balance?: number
+          created_at?: string
+          id?: string
+          status?: string
+          total_commission?: number
+          total_referrals?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          affiliate_code?: string
+          available_balance?: number
+          created_at?: string
+          id?: string
+          status?: string
+          total_commission?: number
+          total_referrals?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cpf: string
@@ -124,6 +187,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          commission_earned: number
+          commission_percentage: number
+          created_at: string
+          id: string
+          referred_user_id: string
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commission_earned?: number
+          commission_percentage: number
+          created_at?: string
+          id?: string
+          referred_user_id: string
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_earned?: number
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          referred_user_id?: string
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       support_messages: {
         Row: {
@@ -375,6 +471,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          referrer_id: string | null
           role: string
           status: string
           updated_at: string | null
@@ -387,6 +484,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          referrer_id?: string | null
           role?: string
           status?: string
           updated_at?: string | null
@@ -399,6 +497,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          referrer_id?: string | null
           role?: string
           status?: string
           updated_at?: string | null
@@ -476,6 +575,10 @@ export type Database = {
       auto_close_tickets: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_affiliate_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>

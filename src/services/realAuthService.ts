@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { processAffiliateRegistration } from '@/utils/affiliateUtils';
 
 export interface AuthResponse {
   user: User | null;
@@ -35,6 +36,14 @@ export class RealAuthService {
 
       if (error) {
         return { user: null, session: null, error: error.message };
+      }
+
+      // Processar afiliado se houver código de referência
+      if (authData.user?.id) {
+        // Usar setTimeout para processar após a transação de signup completar
+        setTimeout(() => {
+          processAffiliateRegistration(authData.user!.id);
+        }, 1000);
       }
 
       return { 

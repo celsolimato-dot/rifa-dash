@@ -4,6 +4,7 @@ export type ClientSection =
   | 'dashboard' 
   | 'rifas' 
   | 'historico' 
+  | 'afiliado'
   | 'perfil' 
   | 'mensagens' 
   | 'suporte';
@@ -70,6 +71,7 @@ function getSectionTitle(section: ClientSection): string {
     dashboard: 'Dashboard',
     rifas: 'Minhas Rifas',
     historico: 'Histórico',
+    afiliado: 'Afiliado',
     perfil: 'Meu Perfil',
     mensagens: 'Mensagens',
     suporte: 'Suporte'

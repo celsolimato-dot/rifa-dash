@@ -13,7 +13,8 @@ import {
   Home,
   Trophy,
   Bell,
-  Settings
+  Settings,
+  Share2
 } from "lucide-react";
 
 interface ClientSidebarProps {
@@ -55,6 +56,12 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
       label: 'Histórico',
       icon: <History className="w-5 h-5" />,
       description: 'Transações e participações'
+    },
+    {
+      id: 'afiliado',
+      label: 'Afiliado',
+      icon: <Share2 className="w-5 h-5" />,
+      description: 'Programa de afiliados'
     },
     {
       id: 'perfil',

@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import BackToTop from "@/components/BackToTop";
 import InstallPWA from "@/components/InstallPWA";
+import { useAffiliateTracking } from "@/hooks/useAffiliateTracking";
 import Index from "./pages/Index";
 import PublicRaffles from "./pages/PublicRaffles";
 import Auth from "./pages/Auth";
@@ -33,6 +34,69 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  // Hook para rastrear códigos de afiliado
+  useAffiliateTracking();
+  
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/rifas" element={<PublicRaffles />} />
+      <Route path="/auth" element={<Auth />} />
+      
+      {/* Protected Admin Routes */}
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout>
+              <Routes>
+                <Route index element={<AdminDashboard />} />
+                <Route path="rifas" element={<ActiveRaffles />} />
+                <Route path="todas-rifas" element={<AllRaffles />} />
+                <Route path="participantes" element={<Participants />} />
+                <Route path="sorteador" element={<Sorteador />} />
+                <Route path="relatorios" element={<Reports />} />
+                <Route path="mensagens" element={<Messages />} />
+                <Route path="configuracoes" element={<Settings />} />
+                <Route path="depoimentos" element={<TestimonialsManagement />} />
+                <Route path="proximo-sorteio" element={<NextDrawManagement />} />
+                <Route path="card-sorteio" element={<NextDrawCardManagement />} />
+                <Route path="rifas/nova" element={<NewRaffle />} />
+                <Route path="rifas/editar/:id" element={<EditRaffle />} />
+              </Routes>
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Protected Client Routes */}
+      <Route
+        path="/cliente"
+        element={
+          <ProtectedRoute requiredRole="client">
+            <ClientDashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Redirects */}
+      <Route 
+        path="/dashboard" 
+        element={<Navigate to="/cliente" replace />} 
+      />
+      <Route 
+        path="/painel" 
+        element={<Navigate to="/admin" replace />} 
+      />
+      
+      {/* 404 - Must be last */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SettingsProvider>
@@ -44,61 +108,7 @@ const App = () => (
               <Toaster />
         <Sonner />
         <BrowserRouter>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/rifas" element={<PublicRaffles />} />
-                  <Route path="/auth" element={<Auth />} />
-                  
-                  {/* Protected Admin Routes */}
-                  <Route
-                    path="/admin/*"
-                    element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminLayout>
-                          <Routes>
-                            <Route index element={<AdminDashboard />} />
-                            <Route path="rifas" element={<ActiveRaffles />} />
-                            <Route path="todas-rifas" element={<AllRaffles />} />
-                            <Route path="participantes" element={<Participants />} />
-                            <Route path="sorteador" element={<Sorteador />} />
-                            <Route path="relatorios" element={<Reports />} />
-                            <Route path="mensagens" element={<Messages />} />
-                            <Route path="configuracoes" element={<Settings />} />
-                            <Route path="depoimentos" element={<TestimonialsManagement />} />
-                            <Route path="proximo-sorteio" element={<NextDrawManagement />} />
-                            <Route path="card-sorteio" element={<NextDrawCardManagement />} />
-                            <Route path="rifas/nova" element={<NewRaffle />} />
-                            <Route path="rifas/editar/:id" element={<EditRaffle />} />
-                          </Routes>
-                        </AdminLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  {/* Protected Client Routes */}
-                  <Route
-                    path="/cliente"
-                    element={
-                      <ProtectedRoute requiredRole="client">
-                        <ClientDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  {/* Redirects */}
-                  <Route 
-                    path="/dashboard" 
-                    element={<Navigate to="/cliente" replace />} 
-                  />
-                  <Route 
-                    path="/painel" 
-                    element={<Navigate to="/admin" replace />} 
-                  />
-                  
-                  {/* 404 - Must be last */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <AppContent />
                 <BackToTop />
                 <InstallPWA />
               </BrowserRouter>

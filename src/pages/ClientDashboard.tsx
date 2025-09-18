@@ -8,6 +8,7 @@ import { ClientRifasSection } from "@/components/client-sections/ClientRifasSect
 import { ClientHistoricoSection } from "@/components/client-sections/ClientHistoricoSection";
 import { ClientPerfilSection } from "@/components/client-sections/ClientPerfilSection";
 import { ClientSuporteSection } from "@/components/client-sections/ClientSuporteSection";
+import ClientAfiliadoSection from "@/components/client-sections/ClientAfiliadoSection";
 import { NumberSelectionModal } from "@/components/NumberSelectionModal";
 import { 
   Breadcrumb,
@@ -54,6 +55,8 @@ const ClientDashboard = () => {
         return <ClientRifasSection onOpenNumberModal={handleOpenNumberModal} />;
       case 'historico':
         return <ClientHistoricoSection />;
+      case 'afiliado':
+        return <ClientAfiliadoSection />;
       case 'perfil':
         return <ClientPerfilSection />;
       case 'suporte':
