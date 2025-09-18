@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,24 @@ import { Trophy, Clock, Save, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const NextDrawCardManagement = () => {
-  const { cardData, updateCardData } = useNextDrawCard();
+  const { cardData, updateCardData, isLoading } = useNextDrawCard();
   
   const [formData, setFormData] = useState({
-    time: cardData.time,
-    prize: cardData.prize,
-    isActive: cardData.isActive
+    time: cardData?.time || '',
+    prize: cardData?.prize || '',
+    isActive: cardData?.isActive || false
   });
+
+  // Update formData when cardData loads
+  useEffect(() => {
+    if (cardData) {
+      setFormData({
+        time: cardData.time,
+        prize: cardData.prize,
+        isActive: cardData.isActive
+      });
+    }
+  }, [cardData]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -30,13 +41,29 @@ const NextDrawCardManagement = () => {
   };
 
   const handleReset = () => {
-    setFormData({
-      time: cardData.time,
-      prize: cardData.prize,
-      isActive: cardData.isActive
-    });
-    toast.info("Formulário resetado");
+    if (cardData) {
+      setFormData({
+        time: cardData.time,
+        prize: cardData.prize,
+        isActive: cardData.isActive
+      });
+      toast.info("Formulário resetado");
+    }
   };
+
+  // Show loading state while data is being fetched
+  if (isLoading || !cardData) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Clock className="w-8 h-8 mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Carregando dados do card...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
