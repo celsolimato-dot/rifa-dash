@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { MessageService } from "../services/messageService";
 import { RaffleService, Raffle } from "../services/raffleService";
 import { SupportTicketService, SupportTicket as RealSupportTicket, SupportMessage } from "@/services/supportTicketService";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Send, 
   MessageSquare, 
@@ -92,6 +93,7 @@ interface Participant {
 const messageService = new MessageService();
 
 export default function Messages() {
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState("messages");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -128,62 +130,142 @@ export default function Messages() {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    // Só carregar dados se o usuário estiver autenticado
+    if (user && user.id) {
+      console.log('👤 Usuário autenticado detectado:', user);
+      loadData();
+    } else {
+      console.warn('⚠️ Usuário não autenticado, aguardando...');
+    }
+  }, [user]);
 
   const loadData = async () => {
+    // Verificar se o usuário está autenticado
+    if (!user || !user.id) {
+      console.warn('⚠️ Usuário não autenticado, cancelando carregamento');
+      setIsLoading(false);
+      return;
+    }
+
+    if (user.role !== 'admin') {
+      console.warn('⚠️ Usuário não é admin, acesso limitado');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const [messagesData, rafflesData, statsData, participantsData] = await Promise.all([
-        messageService.getAllMessages(),
-        RaffleService.getRaffles(),
-        messageService.getMessageStats(),
-        messageService.getActiveParticipants()
-      ]);
+      console.log('🚀 Iniciando carregamento de dados...');
       
+      // Separar carregamento para melhor debug e tratamento de erro
+      let messagesData = [];
+      let rafflesData = [];
+      let statsData = { messagesSent: 0, openRate: 0, clickRate: 0, totalContacts: 0 };
+      let participantsData = [];
+
+      // 1. Carregar mensagens
+      try {
+        messagesData = await messageService.getAllMessages();
+        console.log('✅ Mensagens carregadas:', messagesData.length);
+      } catch (error) {
+        console.error('❌ Erro ao carregar mensagens:', error);
+      }
+
+      // 2. Carregar rifas
+      try {
+        rafflesData = await RaffleService.getRaffles();
+        console.log('✅ Rifas carregadas:', rafflesData.length);
+      } catch (error) {
+        console.error('❌ Erro ao carregar rifas:', error);
+      }
+
+      // 3. Carregar estatísticas (com fallback)
+      try {
+        if (messageService.getMessageStats && typeof messageService.getMessageStats === 'function') {
+          statsData = await messageService.getMessageStats();
+          console.log('✅ Stats carregadas:', statsData);
+        } else {
+          console.warn('⚠️ getMessageStats não disponível, usando fallback');
+          // Fallback para stats
+          const { data: usersCount } = await supabase
+            .from('users')
+            .select('id', { count: 'exact' })
+            .eq('role', 'user');
+          statsData.totalContacts = usersCount?.length || 0;
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar stats:', error);
+      }
+
+      // 4. Carregar participantes
+      try {
+        if (messageService.getActiveParticipants && typeof messageService.getActiveParticipants === 'function') {
+          participantsData = await messageService.getActiveParticipants();
+          console.log('✅ Participantes carregados do service:', participantsData.length);
+        }
+        
+        if (participantsData.length === 0) {
+          console.log('🔄 Buscando participantes da tabela users como fallback...');
+          const { data: usersData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('role', 'user');
+          
+          participantsData = usersData?.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            status: user.status as "active" | "inactive",
+            raffles: []
+          })) || [];
+          console.log('✅ Participantes do fallback:', participantsData.length);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar participantes:', error);
+      }
+
+      // 5. Carregar tickets de suporte (separadamente para não afetar outros dados)
+      try {
+        console.log('🎫 Iniciando carregamento de tickets de suporte...');
+        console.log('👤 Usuário atual:', user);
+        console.log('🔐 Role do usuário:', user?.role);
+        
+        const ticketsData = await SupportTicketService.getAllTickets();
+        console.log('✅ Tickets carregados:', ticketsData.length, ticketsData);
+        
+        setSupportTickets(ticketsData as SupportTicket[]);
+        
+        // Carregar mensagens para cada ticket
+        const messagesMap: { [key: string]: SupportMessage[] } = {};
+        for (const ticket of ticketsData) {
+          try {
+            const messages = await SupportTicketService.getTicketMessages(ticket.id);
+            messagesMap[ticket.id] = messages;
+            console.log(`💬 Mensagens do ticket ${ticket.ticket_number}:`, messages.length);
+          } catch (msgError) {
+            console.error(`❌ Erro ao carregar mensagens do ticket ${ticket.id}:`, msgError);
+            messagesMap[ticket.id] = [];
+          }
+        }
+        setTicketMessages(messagesMap);
+        
+      } catch (error) {
+        console.error('❌ Erro ao carregar tickets de suporte:', error);
+        setSupportTickets([]);
+        setTicketMessages({});
+      }
+
+      // Atualizar estados
       setMessages(messagesData as any);
       setRaffles(rafflesData);
       setMessageStats(statsData);
+      setParticipants(participantsData as any);
       
-      // Usar participantes do messageService se disponíveis, senão buscar dos usuários
-      if (participantsData.length > 0) {
-        setParticipants(participantsData as any);
-      } else {
-        // Get participants from users table as fallback
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'user');
-        
-        const allParticipants: any[] = usersData?.map(user => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || '',
-          status: user.status as "active" | "inactive",
-          raffles: []
-        })) || [];
-        setParticipants(allParticipants);
-      }
-      
-      // Support tickets - usar o serviço real
-      const [ticketsData, allTicketMessages] = await Promise.all([
-        SupportTicketService.getAllTickets(),
-        Promise.resolve({})
-      ]);
-      
-      setSupportTickets(ticketsData as SupportTicket[]);
-      
-      // Carregar mensagens para cada ticket
-      const messagesMap: { [key: string]: SupportMessage[] } = {};
-      for (const ticket of ticketsData) {
-        const messages = await SupportTicketService.getTicketMessages(ticket.id);
-        messagesMap[ticket.id] = messages;
-      }
-      setTicketMessages(messagesMap);
+      console.log('✅ Carregamento concluído!');
       
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro geral ao carregar dados:', error);
     } finally {
       setIsLoading(false);
     }
