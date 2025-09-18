@@ -749,24 +749,24 @@ export default function Messages() {
                       <div className="space-y-4">
                         <h4 className="font-medium">Histórico de Mensagens</h4>
                         <div className="space-y-3 max-h-64 overflow-y-auto">
-                          {ticketMessages[selectedTicket.id].map((message) => (
+                           {ticketMessages[selectedTicket.id].map((message) => (
                             <div
                               key={message.id}
-                              className={`p-3 rounded-lg ${
+                              className={`p-3 rounded-lg border ${
                                 message.sender_type === "admin"
-                                  ? "bg-blue-50 border-l-4 border-blue-500"
-                                  : "bg-gray-50 border-l-4 border-gray-500"
+                                  ? "bg-primary/5 border-l-4 border-primary text-foreground"
+                                  : "bg-muted border-l-4 border-muted-foreground/30 text-foreground"
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-sm">
+                                <span className="font-medium text-sm text-foreground">
                                   {message.sender_name}
                                 </span>
-                                <span className="text-xs text-foreground-muted">
+                                <span className="text-xs text-muted-foreground">
                                   {new Date(message.created_at).toLocaleString('pt-BR')}
                                 </span>
                               </div>
-                              <p className="text-sm">{message.message}</p>
+                              <p className="text-sm text-foreground">{message.message}</p>
                             </div>
                           ))}
                         </div>
