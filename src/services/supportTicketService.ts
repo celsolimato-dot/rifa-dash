@@ -66,12 +66,11 @@ export class SupportTicketService {
     }
   }
 
-  static async getUserTickets(userEmail: string): Promise<SupportTicket[]> {
+  static async getUserTickets(): Promise<SupportTicket[]> {
     try {
       const { data, error } = await supabase
         .from('support_tickets')
         .select('*')
-        .eq('user_email', userEmail)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -143,12 +142,11 @@ export class SupportTicketService {
     }
   }
 
-  static async getTicketStats(userEmail: string): Promise<{ total: number; open: number; closed: number; inProgress: number }> {
+  static async getTicketStats(): Promise<{ total: number; open: number; closed: number; inProgress: number }> {
     try {
       const { data, error } = await supabase
         .from('support_tickets')
-        .select('status')
-        .eq('user_email', userEmail);
+        .select('status');
 
       if (error) throw error;
 

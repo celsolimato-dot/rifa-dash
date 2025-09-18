@@ -44,19 +44,19 @@ export const ClientSuporteSection: React.FC = () => {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.email) {
+    if (user?.id) {
       loadTicketsData();
     }
   }, [user]);
 
   const loadTicketsData = async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     
     try {
       setIsLoading(true);
       const [ticketsData, statsData] = await Promise.all([
-        SupportTicketService.getUserTickets(user.email),
-        SupportTicketService.getTicketStats(user.email)
+        SupportTicketService.getUserTickets(),
+        SupportTicketService.getTicketStats()
       ]);
       
       setTickets(ticketsData);
