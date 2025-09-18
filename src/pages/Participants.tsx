@@ -83,8 +83,8 @@ export default function Participants() {
   const stats = useMemo(() => {
     const total = participants.length;
     const active = participants.filter(p => p.status === "active").length;
-    const totalRevenue = 0; // participants.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
-    const totalTickets = 0; // participants.reduce((sum, p) => sum + (p.totalTickets || 0), 0);
+    const totalRevenue = participants.reduce((sum, p) => sum + (p.total_spent || 0), 0);
+    const totalTickets = participants.reduce((sum, p) => sum + (p.total_tickets || 0), 0);
     
     return { total, active, totalRevenue, totalTickets };
   }, [participants]);
@@ -275,18 +275,18 @@ export default function Participants() {
                       </div>
                     </td>
                     <td className="p-4">
-                        <div className="space-y-1 text-sm">
+                         <div className="space-y-1 text-sm">
                         <div className="flex items-center">
                           <Ticket className="w-4 h-4 mr-2 text-foreground-muted" />
-                          0 bilhetes
+                          {participant.total_tickets} bilhetes
                         </div>
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-2 text-foreground-muted" />
-                          R$ 0.00
+                          R$ {participant.total_spent.toFixed(2)}
                         </div>
                         <div className="flex items-center">
                           <Trophy className="w-4 h-4 mr-2 text-foreground-muted" />
-                          0 vitórias
+                          {participant.wins} vitórias
                         </div>
                       </div>
                     </td>
@@ -350,25 +350,25 @@ export default function Participants() {
                               <div className="grid grid-cols-4 gap-4">
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">0</p>
+                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.total_tickets}</p>
                                     <p className="text-sm text-foreground-muted">Bilhetes Comprados</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">R$ 0.00</p>
+                                    <p className="text-2xl font-bold text-foreground">R$ {selectedParticipant.total_spent.toFixed(2)}</p>
                                     <p className="text-sm text-foreground-muted">Total Gasto</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">0</p>
+                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.raffles_participated}</p>
                                     <p className="text-sm text-foreground-muted">Rifas Participadas</p>
                                   </CardContent>
                                 </Card>
                                 <Card>
                                   <CardContent className="p-4 text-center">
-                                    <p className="text-2xl font-bold text-foreground">0</p>
+                                    <p className="text-2xl font-bold text-foreground">{selectedParticipant.wins}</p>
                                     <p className="text-sm text-foreground-muted">Vitórias</p>
                                   </CardContent>
                                 </Card>
