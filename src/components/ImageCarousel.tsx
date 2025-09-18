@@ -19,14 +19,17 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   const imageViews = images.length > 0 ? images : [];
 
   const nextImage = () => {
+    console.log('Next image clicked, current:', currentIndex, 'total:', imageViews.length);
     setCurrentIndex((prev) => (prev + 1) % imageViews.length);
   };
 
   const prevImage = () => {
+    console.log('Prev image clicked, current:', currentIndex, 'total:', imageViews.length);
     setCurrentIndex((prev) => (prev - 1 + imageViews.length) % imageViews.length);
   };
 
   const goToImage = (index: number) => {
+    console.log('Go to image clicked:', index);
     setCurrentIndex(index);
   };
 
@@ -63,8 +66,11 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white hover:bg-black/80 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white hover:bg-black/80 w-8 h-8 p-0 opacity-60 hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -72,8 +78,11 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white hover:bg-black/80 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white hover:bg-black/80 w-8 h-8 p-0 opacity-60 hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -82,12 +91,15 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         
         {/* Dots Indicator */}
         {imageViews.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity duration-300 z-10">
             {imageViews.map((_, index) => (
               <button
                 key={index}
-                onClick={() => goToImage(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToImage(index);
+                }}
+                className={`w-2 h-2 rounded-full transition-all duration-300 pointer-events-auto ${
                   index === currentIndex 
                     ? 'bg-white shadow-lg' 
                     : 'bg-white/50 hover:bg-white/70'
@@ -98,7 +110,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         )}
         
         {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
           <div className="bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 animate-fade-in">
             <Camera className="w-4 h-4" />
             Ver todas as fotos
