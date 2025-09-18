@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Label } from "@/components/ui/label";
 import { MessageService } from "../services/messageService";
 import { RaffleService, Raffle } from "../services/raffleService";
+import { SupportTicketService, SupportTicket as RealSupportTicket, SupportMessage } from "@/services/supportTicketService";
 import { 
   Send, 
   MessageSquare, 
@@ -64,20 +65,19 @@ interface TicketResponse {
 
 interface SupportTicket {
   id: string;
-  ticketNumber: string;
-  title: string;
-  message: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  priority: "low" | "medium" | "high" | "urgent";
-  createdAt: string;
-  updatedAt: string;
-  clientId: string;
-  clientName: string;
-  clientEmail: string;
-  responses: TicketResponse[];
-  assignedTo?: string;
-  closedAt?: string;
-  autoCloseAt?: string;
+  ticket_number: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  subject: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  assigned_to?: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  auto_close_at: string;
 }
 
 interface Participant {
@@ -117,6 +117,7 @@ export default function Messages() {
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketResponse, setTicketResponse] = useState("");
+  const [ticketMessages, setTicketMessages] = useState<{ [key: string]: SupportMessage[] }>({});
 
   // New message form state
   const [newMessage, setNewMessage] = useState({
@@ -165,9 +166,21 @@ export default function Messages() {
         setParticipants(allParticipants);
       }
       
-      // Support tickets - usar método real quando disponível
-      const ticketsData = await messageService.getSupportTicketsReal();
-      setSupportTickets(ticketsData as any);
+      // Support tickets - usar o serviço real
+      const [ticketsData, allTicketMessages] = await Promise.all([
+        SupportTicketService.getAllTickets(),
+        Promise.resolve({})
+      ]);
+      
+      setSupportTickets(ticketsData as SupportTicket[]);
+      
+      // Carregar mensagens para cada ticket
+      const messagesMap: { [key: string]: SupportMessage[] } = {};
+      for (const ticket of ticketsData) {
+        const messages = await SupportTicketService.getTicketMessages(ticket.id);
+        messagesMap[ticket.id] = messages;
+      }
+      setTicketMessages(messagesMap);
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -591,7 +604,7 @@ export default function Messages() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
                               <span className="text-sm font-medium text-foreground-muted">
-                                #{ticket.ticketNumber}
+                                #{ticket.ticket_number}
                               </span>
                               <Badge
                                 variant={
@@ -619,14 +632,14 @@ export default function Messages() {
                               </Badge>
                             </div>
                             <h4 className="font-medium text-sm mb-1 line-clamp-1">
-                              {ticket.title}
+                              {ticket.subject}
                             </h4>
                             <p className="text-xs text-foreground-muted mb-2 line-clamp-2">
-                              {ticket.message}
+                              {ticket.description}
                             </p>
                             <div className="flex items-center justify-between text-xs text-foreground-muted">
-                              <span>{ticket.clientName}</span>
-                              <span>{new Date(ticket.createdAt).toLocaleDateString('pt-BR')}</span>
+                              <span>{ticket.user_name}</span>
+                              <span>{new Date(ticket.created_at).toLocaleDateString('pt-BR')}</span>
                             </div>
                           </div>
                         </div>
@@ -645,7 +658,7 @@ export default function Messages() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="flex items-center space-x-2">
-                          <span>#{selectedTicket.ticketNumber}</span>
+                          <span>#{selectedTicket.ticket_number}</span>
                           <Badge
                             variant={
                               selectedTicket.status === "open" ? "destructive" :
@@ -659,7 +672,7 @@ export default function Messages() {
                           </Badge>
                         </CardTitle>
                         <p className="text-sm text-foreground-muted mt-1">
-                          {selectedTicket.title}
+                          {selectedTicket.subject}
                         </p>
                       </div>
                       <div className="flex space-x-2">
@@ -692,16 +705,16 @@ export default function Messages() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-foreground-muted">Nome:</span>
-                          <p className="font-medium">{selectedTicket.clientName}</p>
+                          <p className="font-medium">{selectedTicket.user_name}</p>
                         </div>
                         <div>
                           <span className="text-foreground-muted">Email:</span>
-                          <p className="font-medium">{selectedTicket.clientEmail}</p>
+                          <p className="font-medium">{selectedTicket.user_email}</p>
                         </div>
                         <div>
                           <span className="text-foreground-muted">Criado em:</span>
                           <p className="font-medium">
-                            {new Date(selectedTicket.createdAt).toLocaleString('pt-BR')}
+                            {new Date(selectedTicket.created_at).toLocaleString('pt-BR')}
                           </p>
                         </div>
                         <div>
@@ -725,32 +738,33 @@ export default function Messages() {
                     {/* Mensagem Original */}
                     <div className="border-l-4 border-blue-500 pl-4">
                       <h4 className="font-medium mb-2">Mensagem Original</h4>
-                      <p className="text-sm">{selectedTicket.message}</p>
+                      <p className="text-sm font-medium mb-1">{selectedTicket.subject}</p>
+                      <p className="text-sm">{selectedTicket.description}</p>
                     </div>
 
-                    {/* Histórico de Respostas */}
-                    {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                    {/* Histórico de Mensagens */}
+                    {ticketMessages[selectedTicket.id] && ticketMessages[selectedTicket.id].length > 0 && (
                       <div className="space-y-4">
-                        <h4 className="font-medium">Histórico de Respostas</h4>
+                        <h4 className="font-medium">Histórico de Mensagens</h4>
                         <div className="space-y-3 max-h-64 overflow-y-auto">
-                          {selectedTicket.responses.map((response) => (
+                          {ticketMessages[selectedTicket.id].map((message) => (
                             <div
-                              key={response.id}
+                              key={message.id}
                               className={`p-3 rounded-lg ${
-                                response.authorType === "admin"
+                                message.sender_type === "admin"
                                   ? "bg-blue-50 border-l-4 border-blue-500"
                                   : "bg-gray-50 border-l-4 border-gray-500"
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-medium text-sm">
-                                  {response.author}
+                                  {message.sender_name}
                                 </span>
                                 <span className="text-xs text-foreground-muted">
-                                  {new Date(response.createdAt).toLocaleString('pt-BR')}
+                                  {new Date(message.created_at).toLocaleString('pt-BR')}
                                 </span>
                               </div>
-                              <p className="text-sm">{response.message}</p>
+                              <p className="text-sm">{message.message}</p>
                             </div>
                           ))}
                         </div>
@@ -775,38 +789,30 @@ export default function Messages() {
                             Cancelar
                           </Button>
                           <Button
-                            onClick={() => {
+                            onClick={async () => {
                               if (ticketResponse.trim()) {
-                                const newResponse: TicketResponse = {
-                                  id: Date.now().toString(),
-                                  message: ticketResponse,
-                                  author: "Admin",
-                                  authorType: "admin",
-                                  createdAt: new Date().toISOString()
-                                };
-
-                                setSupportTickets(tickets =>
-                                  tickets.map(t =>
-                                    t.id === selectedTicket.id
-                                      ? {
-                                          ...t,
-                                          responses: [...(t.responses || []), newResponse],
-                                          status: "in_progress",
-                                          updatedAt: new Date().toISOString(),
-                                          assignedTo: "Admin"
-                                        }
-                                      : t
-                                  )
+                                const result = await SupportTicketService.sendAdminMessage(
+                                  {
+                                    ticket_id: selectedTicket.id,
+                                    message: ticketResponse
+                                  },
+                                  {
+                                    id: "admin-id", // TODO: Get real admin ID
+                                    name: "Admin"
+                                  }
                                 );
 
-                                setSelectedTicket(prev => prev ? {
-                                  ...prev,
-                                  responses: [...(prev.responses || []), newResponse],
-                                  status: "in_progress",
-                                  assignedTo: "Admin"
-                                } : null);
-
-                                setTicketResponse("");
+                                if (result.success) {
+                                  // Recarregar mensagens do ticket
+                                  const messages = await SupportTicketService.getTicketMessages(selectedTicket.id);
+                                  setTicketMessages(prev => ({
+                                    ...prev,
+                                    [selectedTicket.id]: messages
+                                  }));
+                                  
+                                  setTicketResponse("");
+                                  loadData(); // Recarregar dados gerais
+                                }
                               }
                             }}
                             disabled={!ticketResponse.trim()}
