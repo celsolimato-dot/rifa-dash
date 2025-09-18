@@ -15,6 +15,7 @@ interface RaffleData {
   title: string;
   description?: string;
   image: string;
+  images?: string[];  // Nova propriedade para múltiplas imagens
   prize: string;
   prizeValue: number;
   ticketPrice: number;
@@ -41,6 +42,7 @@ interface RaffleCardProps {
   ticketPrice?: number;
   description?: string;
   image?: string;
+  images?: string[];  // Nova propriedade para múltiplas imagens
   imageUrl?: string;
   totalTickets?: number;
   soldTickets?: number;
@@ -62,6 +64,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
     ticketPrice: props.ticketPrice || 0,
     description: props.description,
     image: props.image || props.imageUrl || '',
+    images: props.images || (props.image ? [props.image] : []) || (props.imageUrl ? [props.imageUrl] : []),
     totalTickets: props.totalTickets || 0,
     soldTickets: props.soldTickets || 0,
     drawDate: props.drawDate || '',
@@ -80,6 +83,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
     ticketPrice,
     description,
     image, 
+    images = [],
     totalTickets, 
     soldTickets, 
     drawDate, 
@@ -139,7 +143,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
       {/* Enhanced Image Section with Custom Carousel */}
       <div className="relative group/image overflow-hidden">
         <ImageCarousel 
-          images={image ? [image] : []} 
+          images={images.length > 0 ? images : (image ? [image] : [])} 
           title={title}
           className="hover:scale-105 transition-transform duration-700"
         />
@@ -269,6 +273,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           title: title || '',
           description,
           image: image || '',
+          images: images.length > 0 ? images : (image ? [image] : []),
           price: safeTicketPrice,
           prizeValue: safePrizeValue,
           totalTickets: safeTotalTickets,

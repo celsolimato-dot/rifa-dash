@@ -118,6 +118,11 @@ const RaffleCarousel = () => {
                   drawDate={raffle.draw_date}
                   status={raffle.status}
                   description={raffle.description}
+                  images={[
+                    (raffle as any).image_url,
+                    (raffle as any).image_url_2,
+                    (raffle as any).image_url_3
+                  ].filter(Boolean)}
                   image={raffle.image_url || prizeCarImage}
                 />
               </div>
@@ -144,6 +149,11 @@ const RaffleCarousel = () => {
                       drawDate={raffle.draw_date}
                       status={raffle.status}
                       description={raffle.description}
+                      images={[
+                        (raffle as any).image_url,
+                        (raffle as any).image_url_2,
+                        (raffle as any).image_url_3
+                      ].filter(Boolean)}
                       image={raffle.image_url || prizeCarImage}
                     />
                   </div>

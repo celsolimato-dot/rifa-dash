@@ -31,6 +31,7 @@ interface RaffleDetailsModalProps {
     title: string;
     description?: string;
     image: string;
+    images?: string[];
     price: number;
     totalTickets: number;
     soldTickets: number;
@@ -75,7 +76,7 @@ export const RaffleDetailsModal: React.FC<RaffleDetailsModalProps> = ({
           {/* Imagem Principal com Carousel */}
           <div className="space-y-4">
             <ImageCarousel 
-              images={raffle.image ? [raffle.image] : []} 
+              images={raffle.images && raffle.images.length > 0 ? raffle.images : (raffle.image ? [raffle.image] : [])} 
               title={raffle.title}
               className="rounded-lg shadow-lg"
             />

@@ -15,12 +15,8 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Create multiple views from a single image for demo
-  const imageViews = images.length > 0 ? [
-    images[0], // Original
-    images[0], // Slightly adjusted
-    images[0], // Another variation
-  ] : [];
+  // Use all provided images, fallback to single image if only one exists
+  const imageViews = images.length > 0 ? images : [];
 
   const nextImage = () => {
     setCurrentIndex((prev) => (prev + 1) % imageViews.length);
@@ -50,10 +46,6 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
           src={imageViews[currentIndex]}
           alt={`${title} - Imagem ${currentIndex + 1}`}
           className="w-full h-full object-cover transition-all duration-500"
-          style={{
-            filter: currentIndex === 1 ? 'brightness(0.95) contrast(1.05)' : 
-                   currentIndex === 2 ? 'brightness(1.05) contrast(0.95)' : 'none'
-          }}
         />
         
         {/* Gradient Overlay */}
