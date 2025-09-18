@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { RealTicketService } from "@/services/realTicketService";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface NumberSelectionModalProps {
   isOpen: boolean;
@@ -63,10 +66,33 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [pixData, setPixData] = useState<any>(null);
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [paymentPolling, setPaymentPolling] = useState<NodeJS.Timeout | null>(null);
 
   // Estado para números vendidos e reservados (buscar do banco)
   const [soldNumbers, setSoldNumbers] = useState<string[]>([]);
   const [reservedNumbers, setReservedNumbers] = useState<string[]>([]);
+
+  const ticketService = new RealTicketService();
+
+  // Carregar tickets existentes quando modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      loadExistingTickets();
+    }
+  }, [isOpen, raffle.id]);
+
+  const loadExistingTickets = async () => {
+    try {
+      const tickets = await ticketService.getTicketsByRaffle(raffle.id);
+      const sold = tickets
+        .filter(t => t.status === 'sold' && t.payment_status === 'paid')
+        .map(t => t.number.toString().padStart(3, '0'));
+      setSoldNumbers(sold);
+    } catch (error) {
+      console.error('Erro ao carregar tickets:', error);
+    }
+  };
 
   // Gerar números disponíveis
   const generateNumbers = () => {
@@ -227,63 +253,152 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
       const data = await response.json();
       
       if (data.data && data.data.brCode && data.data.brCodeBase64) {
+        // Salvar tickets como pendentes no banco
+        await saveTicketsToPending(data.data.id);
+        
         setPixData(data.data);
         setCurrentStep('pix');
+        
+        // Iniciar polling para verificar pagamento
+        startPaymentPolling(data.data.id);
       } else {
         throw new Error('Resposta inválida da API');
       }
     } catch (error) {
-      console.error('Erro ao gerar PIX:', error);
-      
-      let errorMessage = 'Erro ao gerar PIX QR Code. Tente novamente.';
-      
-      if (error.message.includes('Token da API')) {
-        errorMessage = 'Configuração da API não encontrada. Entre em contato com o suporte.';
-      } else if (error.message.includes('HTTP: 401')) {
-        errorMessage = 'Token de API inválido. Entre em contato com o suporte.';
-      } else if (error.message.includes('HTTP: 400')) {
-        errorMessage = 'Dados inválidos para geração do PIX. Verifique as informações.';
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
-      }
-      
-      alert(errorMessage);
+      console.error('Erro ao gerar PIX:', error);      
+      toast.error(getErrorMessage(error));
     } finally {
       setIsGeneratingPix(false);
     }
   };
 
-  const handlePurchase = async () => {
-    setIsProcessingPayment(true);
-    
+  const getErrorMessage = (error: any) => {
+    if (error.message.includes('Token da API')) {
+      return 'Configuração da API não encontrada. Entre em contato com o suporte.';
+    } else if (error.message.includes('HTTP: 401')) {
+      return 'Token de API inválido. Entre em contato com o suporte.';
+    } else if (error.message.includes('HTTP: 400')) {
+      return 'Dados inválidos para geração do PIX. Verifique as informações.';
+    } else if (error.message.includes('Failed to fetch')) {
+      return 'Erro de conexão. Verifique sua internet e tente novamente.';
+    }
+    return 'Erro ao gerar PIX QR Code. Tente novamente.';
+  };
+
+  const saveTicketsToPending = async (paymentId: string) => {
     try {
-      // Simular processamento de pagamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const ticketNumbers = selectedNumbers.map(sel => parseInt(sel.number));
       
-      // Mover números para vendidos
-      const numbersToSell = selectedNumbers.map(sel => sel.number);
-      
-      // Remover dos reservados e timers
-      setReservedNumbers(prev => prev.filter(num => !numbersToSell.includes(num)));
-      setReservationTimers(prev => prev.filter(timer => !numbersToSell.includes(timer.number)));
-      
-      // Simular adição aos números vendidos (em uma aplicação real, isso viria do backend)
-      // setSoldNumbers(prev => [...prev, ...numbersToSell]);
-      
-      alert(`Parabéns! Você comprou os números: ${numbersToSell.join(', ')}`);
-      
-      // Resetar estado e fechar modal
+      await ticketService.purchaseTickets(raffle.id, ticketNumbers, {
+        name: user?.name || 'Cliente',
+        email: user?.email || '',
+        phone: user?.phone || ''
+      });
+
+      // Atualizar tickets para incluir payment_id
+      const { error } = await supabase
+        .from('tickets')
+        .update({ payment_id: paymentId })
+        .eq('raffle_id', raffle.id)
+        .eq('buyer_email', user?.email)
+        .eq('payment_status', 'pending');
+
+      if (error) {
+        console.error('Erro ao atualizar payment_id:', error);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar tickets:', error);
+      throw error;
+    }
+  };
+
+  const startPaymentPolling = (pixId: string) => {
+    // Limpar polling anterior se existir
+    if (paymentPolling) {
+      clearInterval(paymentPolling);
+    }
+
+    const interval = setInterval(async () => {
+      await checkPaymentStatus(pixId);
+    }, 5000); // Verificar a cada 5 segundos
+
+    setPaymentPolling(interval);
+
+    // Parar polling após 5 minutos (tempo de expiração do PIX)
+    setTimeout(() => {
+      if (interval) {
+        clearInterval(interval);
+        setPaymentPolling(null);
+      }
+    }, 300000);
+  };
+
+  const checkPaymentStatus = async (pixId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { 
+          pixId, 
+          userEmail: user?.email, 
+          raffleId: raffle.id 
+        }
+      });
+
+      if (error) {
+        console.error('Erro ao verificar status:', error);
+        return;
+      }
+
+      if (data.status === 'paid') {
+        // Pagamento confirmado!
+        if (paymentPolling) {
+          clearInterval(paymentPolling);
+          setPaymentPolling(null);
+        }
+        
+        toast.success('Pagamento confirmado! Seus números foram reservados.');
+        
+        // Atualizar números vendidos
+        await loadExistingTickets();
+        
+        // Resetar e fechar modal
+        handlePaymentSuccess();
+      }
+    } catch (error) {
+      console.error('Erro ao verificar pagamento:', error);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setSelectedNumbers([]);
+    setCurrentStep('selection');
+    setPixData(null);
+    setReservedNumbers([]);
+    setReservationTimers([]);
+    onClose();
+  };
+
+  const handleManualPaymentCheck = async () => {
+    if (!pixData?.id) return;
+    
+    setIsCheckingPayment(true);
+    await checkPaymentStatus(pixData.id);
+    setIsCheckingPayment(false);
+  };
+
+  // Cleanup ao fechar modal
+  useEffect(() => {
+    if (!isOpen) {
+      if (paymentPolling) {
+        clearInterval(paymentPolling);
+        setPaymentPolling(null);
+      }
       setSelectedNumbers([]);
       setCurrentStep('selection');
       setPixData(null);
-      onClose();
-      
-    } catch (error) {
-      alert('Erro ao processar pagamento. Tente novamente.');
-    } finally {
-      setIsProcessingPayment(false);
+      setReservedNumbers([]);
+      setReservationTimers([]);
     }
-  };
+  }, [isOpen, paymentPolling]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -462,19 +577,19 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
           Voltar
         </Button>
         <Button 
-          onClick={handlePurchase}
-          disabled={isProcessingPayment}
+          onClick={generatePixQrCode}
+          disabled={isGeneratingPix}
           className="flex-1 bg-green-600 hover:bg-green-700"
         >
-          {isProcessingPayment ? (
+          {isGeneratingPix ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Processando...
+              Gerando PIX...
             </>
           ) : (
             <>
               <CreditCard className="w-4 h-4 mr-2" />
-              Finalizar Compra
+              Gerar PIX
             </>
           )}
         </Button>
@@ -556,13 +671,18 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
           Cancelar
         </Button>
         <Button 
-          onClick={() => {
-            // Aqui você pode implementar verificação de status do pagamento
-            alert('Verificando status do pagamento...');
-          }}
+          onClick={handleManualPaymentCheck}
+          disabled={isCheckingPayment}
           className="flex-1 bg-blue-600 hover:bg-blue-700"
         >
-          Verificar Pagamento
+          {isCheckingPayment ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Verificando...
+            </>
+          ) : (
+            'Verificar Pagamento'
+          )}
         </Button>
       </div>
     </div>
