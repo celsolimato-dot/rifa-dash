@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useState } from "react";
 import TermsOfUseModal from "@/components/TermsOfUseModal";
+import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 import { 
   Facebook, 
   Instagram, 
@@ -18,6 +19,7 @@ const Footer = () => {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   const handleSmoothScroll = (targetId: string) => {
     const element = document.getElementById(targetId);
@@ -169,9 +171,12 @@ const Footer = () => {
                 Termos de Uso
               </button>
               <span>•</span>
-              <a href="#" className="hover:text-primary transition-colors">
+              <button 
+                onClick={() => setIsPrivacyModalOpen(true)}
+                className="hover:text-primary transition-colors cursor-pointer"
+              >
                 Política de Privacidade
-              </a>
+              </button>
               <span>•</span>
               <a href="#" className="hover:text-primary transition-colors">
                 Regulamento
@@ -190,6 +195,10 @@ const Footer = () => {
       <TermsOfUseModal 
         isOpen={isTermsModalOpen} 
         onClose={() => setIsTermsModalOpen(false)} 
+      />
+      <PrivacyPolicyModal 
+        isOpen={isPrivacyModalOpen} 
+        onClose={() => setIsPrivacyModalOpen(false)} 
       />
     </footer>
   );
