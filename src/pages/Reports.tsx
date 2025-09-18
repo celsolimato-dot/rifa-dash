@@ -50,12 +50,22 @@ export default function Reports() {
   // Estados para dados reais
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [topRaffles, setTopRaffles] = useState<TopRaffle[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics>({
     total: 0,
     thisMonth: 0,
     lastMonth: 0,
     growth: 0
   });
+  const [ticketsMetrics, setTicketsMetrics] = useState({
+    total: 0,
+    growth: 0
+  });
+  const [participantsMetrics, setParticipantsMetrics] = useState({
+    total: 0,
+    growth: 0
+  });
+  const [conversionRate, setConversionRate] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState("6months");
   const [selectedMetric, setSelectedMetric] = useState("revenue");
@@ -64,9 +74,27 @@ export default function Reports() {
   const loadReportsData = async () => {
     setIsLoading(true);
     try {
-      // Carregar métricas de receita
-      const revenueData = await RaffleService.getRevenueMetrics();
-      if (!revenueData.error) {
+      // Carregar todas as métricas em paralelo
+      const [
+        revenueData,
+        salesResponse,
+        topRafflesData,
+        ticketsData,
+        participantsData,
+        conversionData,
+        activityData
+      ] = await Promise.all([
+        RaffleService.getRevenueMetrics(),
+        RaffleService.getSalesData(),
+        RaffleService.getTopRaffles(),
+        RaffleService.getTicketsMetrics(),
+        RaffleService.getParticipantsMetrics(),
+        RaffleService.getConversionRate(),
+        RaffleService.getRecentActivity()
+      ]);
+
+      // Atualizar métricas de receita
+      if (!revenueData.error && 'total' in revenueData) {
         setRevenueMetrics({
           total: revenueData.total,
           thisMonth: revenueData.thisMonth,
@@ -75,30 +103,38 @@ export default function Reports() {
         });
       }
 
-      // Carregar dados de vendas - convert format
-      const salesResponse = await RaffleService.getSalesData();
-      if (!salesResponse.error) {
-        const formattedSales = salesResponse.data?.map((item: any) => ({
-          month: item.date,
-          revenue: 0,
-          tickets: item.sales,
-          raffles: 1
-        })) || [];
-        setSalesData(formattedSales);
+      // Atualizar dados de vendas
+      if (!salesResponse.error && 'data' in salesResponse) {
+        setSalesData(salesResponse.data || []);
       }
 
-      // Carregar top rifas - convert format with all required properties
-      const topRafflesResponse = await RaffleService.getRaffles();
-      const formattedTopRaffles = topRafflesResponse.slice(0, 5).map((raffle: any) => ({
-        id: raffle.id,
-        title: raffle.title,
-        ticketsSold: raffle.sold_tickets || 0,
-        totalTickets: raffle.total_tickets || 0,
-        revenue: raffle.revenue || 0,
-        participants: raffle.sold_tickets || 0,
-        status: raffle.status
-      }));
-      setTopRaffles(formattedTopRaffles);
+      // Atualizar top rifas
+      setTopRaffles(topRafflesData);
+
+      // Atualizar métricas de bilhetes
+      if (!ticketsData.error && 'total' in ticketsData) {
+        setTicketsMetrics({
+          total: ticketsData.total,
+          growth: ticketsData.growth
+        });
+      }
+
+      // Atualizar métricas de participantes
+      if (!participantsData.error && 'total' in participantsData) {
+        setParticipantsMetrics({
+          total: participantsData.total,
+          growth: participantsData.growth
+        });
+      }
+
+      // Atualizar taxa de conversão
+      if (!conversionData.error && 'conversionRate' in conversionData) {
+        setConversionRate(conversionData.conversionRate);
+      }
+
+      // Atualizar atividades recentes
+      setRecentActivity(activityData);
+
     } catch (error) {
       console.error('Erro ao carregar dados dos relatórios:', error);
     } finally {
@@ -250,11 +286,23 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Bilhetes Vendidos</p>
-                <p className="text-2xl font-bold text-foreground">12,400</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-600">+8%</span>
-                </div>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-foreground">{ticketsMetrics.total.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      {ticketsMetrics.growth >= 0 ? (
+                        <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                      )}
+                      <span className={`text-sm ${ticketsMetrics.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {ticketsMetrics.growth >= 0 ? '+' : ''}{ticketsMetrics.growth.toFixed(1)}%
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
               <Ticket className="w-8 h-8 text-blue-500" />
             </div>
@@ -266,11 +314,23 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Participantes Únicos</p>
-                <p className="text-2xl font-bold text-foreground">1,234</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-600">+15%</span>
-                </div>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-foreground">{participantsMetrics.total.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      {participantsMetrics.growth >= 0 ? (
+                        <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                      )}
+                      <span className={`text-sm ${participantsMetrics.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {participantsMetrics.growth >= 0 ? '+' : ''}{participantsMetrics.growth.toFixed(1)}%
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
               <Users className="w-8 h-8 text-purple-500" />
             </div>
@@ -282,11 +342,17 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Taxa de Conversão</p>
-                <p className="text-2xl font-bold text-foreground">87%</p>
-                <div className="flex items-center mt-1">
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-sm text-red-600">-2%</span>
-                </div>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-foreground">{conversionRate.toFixed(0)}%</p>
+                    <div className="flex items-center mt-1">
+                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                      <span className="text-sm text-green-600">Estável</span>
+                    </div>
+                  </>
+                )}
               </div>
               <Target className="w-8 h-8 text-orange-500" />
             </div>
@@ -378,51 +444,72 @@ export default function Reports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { action: "Nova rifa criada", item: "PlayStation 5", time: "2 horas atrás", type: "create" },
-                  { action: "Sorteio realizado", item: "iPhone 15 Pro Max", time: "4 horas atrás", type: "draw" },
-                  { action: "Meta de vendas atingida", item: "Notebook Gamer", time: "6 horas atrás", type: "goal" },
-                  { action: "Novo participante", item: "João Silva", time: "8 horas atrás", type: "user" }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50">
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.type === 'create' ? 'bg-blue-500' :
-                      activity.type === 'draw' ? 'bg-green-500' :
-                      activity.type === 'goal' ? 'bg-yellow-500' : 'bg-purple-500'
-                    }`} />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-foreground-muted">{activity.item}</p>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              ) : recentActivity.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-foreground-muted">Nenhuma atividade recente encontrada.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50">
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.type === 'create' ? 'bg-blue-500' :
+                        activity.type === 'draw' ? 'bg-green-500' :
+                        activity.type === 'goal' ? 'bg-yellow-500' : 'bg-purple-500'
+                      }`} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{activity.action}</p>
+                        <p className="text-xs text-foreground-muted">{activity.item}</p>
+                      </div>
+                      <p className="text-xs text-foreground-muted">{activity.time}</p>
                     </div>
-                    <p className="text-xs text-foreground-muted">{activity.time}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="raffles" className="space-y-6">
+         <TabsContent value="raffles" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardContent className="p-6 text-center">
                 <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">103</p>
-                <p className="text-sm text-foreground-muted">Total de Rifas</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">{topRaffles.length}</p>
+                )}
+                <p className="text-sm text-foreground-muted">Rifas Ativas</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <Target className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">87%</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">{conversionRate.toFixed(0)}%</p>
+                )}
                 <p className="text-sm text-foreground-muted">Taxa de Sucesso</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <Percent className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">R$ 1,234</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(revenueMetrics.total / Math.max(ticketsMetrics.total, 1))}
+                  </p>
+                )}
                 <p className="text-sm text-foreground-muted">Ticket Médio</p>
               </CardContent>
             </Card>
@@ -434,22 +521,38 @@ export default function Reports() {
             <Card>
               <CardContent className="p-6 text-center">
                 <Users className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">1,234</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">{participantsMetrics.total.toLocaleString()}</p>
+                )}
                 <p className="text-sm text-foreground-muted">Participantes Únicos</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <TrendingUp className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">+15%</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">
+                    {participantsMetrics.growth >= 0 ? '+' : ''}{participantsMetrics.growth.toFixed(1)}%
+                  </p>
+                )}
                 <p className="text-sm text-foreground-muted">Crescimento Mensal</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <Calendar className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-                <p className="text-2xl font-bold">3.2</p>
-                <p className="text-sm text-foreground-muted">Rifas por Participante</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold">
+                    {(ticketsMetrics.total / Math.max(participantsMetrics.total, 1)).toFixed(1)}
+                  </p>
+                )}
+                <p className="text-sm text-foreground-muted">Bilhetes por Participante</p>
               </CardContent>
             </Card>
           </div>
