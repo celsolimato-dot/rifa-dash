@@ -43,8 +43,9 @@ interface RegisterForm {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { login, isLoading } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { login, isLoading, resetPassword } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [forgotEmail, setForgotEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       cpf: '',
       phone: ''
     });
+    setForgotEmail('');
     setError('');
     setSuccess('');
   };
@@ -81,6 +83,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const handleClose = () => {
     resetForms();
     onClose();
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!forgotEmail) {
+      setError('Email é obrigatório');
+      return;
+    }
+
+    if (!validateEmail(forgotEmail)) {
+      setError('Email inválido');
+      return;
+    }
+
+    try {
+      await resetPassword(forgotEmail);
+      setSuccess('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      setTimeout(() => {
+        setMode('login');
+        setSuccess('');
+        setForgotEmail('');
+      }, 3000);
+    } catch (error: any) {
+      setError(error.message || 'Erro ao enviar email de recuperação. Tente novamente.');
+    }
   };
 
   const validateEmail = (email: string) => {
@@ -209,31 +238,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Toggle entre Login e Cadastro */}
+          {/* Toggle entre Login, Cadastro e Esqueceu Senha */}
           <div className="flex bg-muted rounded-lg p-1">
             <Button
               variant={mode === 'login' ? 'default' : 'ghost'}
-              className="flex-1"
+              className="flex-1 text-xs"
               onClick={() => {
                 setMode('login');
                 setError('');
                 setSuccess('');
               }}
             >
-              <LogIn className="w-4 h-4 mr-2" />
+              <LogIn className="w-4 h-4 mr-1" />
               Entrar
             </Button>
             <Button
               variant={mode === 'register' ? 'default' : 'ghost'}
-              className="flex-1"
+              className="flex-1 text-xs"
               onClick={() => {
                 setMode('register');
                 setError('');
                 setSuccess('');
               }}
             >
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4 mr-1" />
               Cadastrar
+            </Button>
+            <Button
+              variant={mode === 'forgot' ? 'default' : 'ghost'}
+              className="flex-1 text-xs"
+              onClick={() => {
+                setMode('forgot');
+                setError('');
+                setSuccess('');
+              }}
+            >
+              Recuperar
             </Button>
           </div>
 
@@ -443,6 +483,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </form>
           )}
 
+          {/* Formulário de Esqueceu Senha */}
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
+              </Button>
+            </form>
+          )}
+
           <Separator />
 
           <div className="text-center text-sm text-muted-foreground">
@@ -456,8 +521,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 >
                   Cadastre-se aqui
                 </Button>
+                {' ou '}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-semibold"
+                  onClick={() => setMode('forgot')}
+                >
+                  Esqueceu a senha?
+                </Button>
               </span>
-            ) : (
+            ) : mode === 'register' ? (
               <span>
                 Já tem uma conta?{' '}
                 <Button
@@ -466,6 +539,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   onClick={() => setMode('login')}
                 >
                   Faça login
+                </Button>
+              </span>
+            ) : (
+              <span>
+                Lembrou sua senha?{' '}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-semibold"
+                  onClick={() => setMode('login')}
+                >
+                  Voltar ao login
                 </Button>
               </span>
             )}
