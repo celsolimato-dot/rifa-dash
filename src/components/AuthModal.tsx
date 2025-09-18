@@ -19,6 +19,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { validateCPF as validateCPFUtil, formatCPF as formatCPFUtil, validatePhone as validatePhoneUtil, formatPhone as formatPhoneUtil } from "@/utils/cpfValidator";
 
 interface AuthModalProps {
@@ -102,14 +103,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
 
     try {
-      await login(loginForm.email, loginForm.password);
-      setSuccess('Login realizado com sucesso!');
-      setTimeout(() => {
-        handleClose();
-        onSuccess();
-      }, 1000);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
+
+      if (error) {
+        setError(error.message === 'Invalid login credentials' ? 
+          'Email ou senha incorretos' : error.message);
+        return;
+      }
+
+      if (data.user) {
+        setSuccess('Login realizado com sucesso!');
+        setTimeout(() => {
+          handleClose();
+          onSuccess();
+        }, 1000);
+      }
     } catch (error) {
-      setError('Email ou senha incorretos');
+      setError('Erro ao fazer login. Tente novamente.');
     }
   };
 
@@ -151,13 +164,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     // Simular cadastro (em um app real, seria uma chamada para API)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setSuccess('Cadastro realizado com sucesso! Faça login para continuar.');
-      setTimeout(() => {
-        setMode('login');
-        setSuccess('');
-        setLoginForm({ email: registerForm.email, password: '' });
-      }, 2000);
+      const { data, error } = await supabase.auth.signUp({
+        email: registerForm.email,
+        password: registerForm.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: registerForm.name,
+            cpf: registerForm.cpf,
+            phone: registerForm.phone
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          setError('Este email já está cadastrado. Tente fazer login.');
+        } else {
+          setError('Erro ao criar conta: ' + error.message);
+        }
+        return;
+      }
+
+      if (data.user) {
+        setSuccess('Cadastro realizado com sucesso! Verifique seu email para confirmar.');
+        setTimeout(() => {
+          setMode('login');
+          setSuccess('');
+          setLoginForm({ email: registerForm.email, password: '' });
+        }, 3000);
+      }
     } catch (err) {
       setError('Erro ao criar conta. Tente novamente.');
     }

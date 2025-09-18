@@ -37,6 +37,7 @@ export const RealAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       email: supabaseUser.email || '',
       role: supabaseUser.email === 'admin@rifou.net.br' ? 'admin' : 'client',
       phone: supabaseUser.user_metadata?.phone,
+      cpf: supabaseUser.user_metadata?.cpf,
       avatar: supabaseUser.user_metadata?.avatar_url
     };
   };

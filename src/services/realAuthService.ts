@@ -10,7 +10,8 @@ export interface AuthResponse {
 export interface RegisterData {
   name: string;
   email: string;
-  phone?: string;
+  cpf: string;
+  phone: string;
   password: string;
 }
 
@@ -26,7 +27,8 @@ export class RealAuthService {
           emailRedirectTo: redirectUrl,
           data: {
             name: data.name,
-            phone: data.phone || ''
+            cpf: data.cpf,
+            phone: data.phone
           }
         }
       });

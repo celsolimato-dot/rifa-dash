@@ -22,7 +22,7 @@ const Auth = () => {
     confirmPassword: ''
   });
   
-  const { login, isLoading } = useAuth();
+  const { login, register, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -36,22 +36,18 @@ const Auth = () => {
         description: "Redirecionando para seu painel...",
       });
       
-      // Redirecionar baseado no tipo de usuário
-      if (loginData.email === 'admin@rifou.net.br') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (error) {
+      // Redirecionar para o dashboard (o contexto já gerencia se é admin ou client)
+      navigate('/dashboard');
+    } catch (error: any) {
       toast({
         title: "Erro no login",
-        description: "Email ou senha incorretos.",
+        description: error.message || "Email ou senha incorretos.",
         variant: "destructive",
       });
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validação de campos obrigatórios
@@ -104,10 +100,51 @@ const Auth = () => {
       return;
     }
 
-    toast({
-      title: "Cadastro em desenvolvimento",
-      description: "Em breve você poderá se cadastrar. Use o login de demonstração.",
-    });
+    // Cadastro real com Supabase usando o contexto
+    try {
+      await register({
+        name: registerData.name,
+        email: registerData.email,
+        cpf: registerData.cpf,
+        phone: registerData.phone,
+        password: registerData.password
+      });
+
+      toast({
+        title: "Cadastro realizado!",
+        description: "Sua conta foi criada com sucesso. Verifique seu email para confirmar.",
+      });
+      
+      // Reset form
+      setRegisterData({
+        name: '',
+        email: '',
+        cpf: '',
+        phone: '',
+        password: '',
+        confirmPassword: ''
+      });
+      
+      // Redirect to dashboard after a brief delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+      
+    } catch (error: any) {
+      if (error.message.includes('User already registered')) {
+        toast({
+          title: "Email já cadastrado",
+          description: "Este email já está registrado. Tente fazer login.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro no cadastro",
+          description: error.message || "Ocorreu um erro inesperado. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
