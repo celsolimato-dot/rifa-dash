@@ -100,7 +100,15 @@ export default function Messages() {
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [selectedRaffle, setSelectedRaffle] = useState<string>("");
   const [raffleParticipants, setRaffleParticipants] = useState<Participant[]>([]);
+
+  // Estados para dados das mensagens
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messageStats, setMessageStats] = useState({
+    messagesSent: 0,
+    openRate: 0,
+    clickRate: 0,
+    totalContacts: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -109,7 +117,6 @@ export default function Messages() {
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketResponse, setTicketResponse] = useState("");
-  const [templates, setTemplates] = useState<Template[]>([]);
 
   // New message form state
   const [newMessage, setNewMessage] = useState({
@@ -126,42 +133,42 @@ export default function Messages() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [messagesData, rafflesData, templatesData, ticketsData] = await Promise.all([
+      const [messagesData, rafflesData, statsData, participantsData] = await Promise.all([
         messageService.getAllMessages(),
         RaffleService.getRaffles(),
-        messageService.getTemplates(),
-        messageService.getSupportTickets()
+        messageService.getMessageStats(),
+        messageService.getActiveParticipants()
       ]);
+      
       setMessages(messagesData as any);
       setRaffles(rafflesData);
-      setTemplates(templatesData as any);
+      setMessageStats(statsData);
+      
+      // Usar participantes do messageService se disponíveis, senão buscar dos usuários
+      if (participantsData.length > 0) {
+        setParticipants(participantsData as any);
+      } else {
+        // Get participants from users table as fallback
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('role', 'user');
+        
+        const allParticipants: any[] = usersData?.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          status: user.status as "active" | "inactive",
+          raffles: []
+        })) || [];
+        setParticipants(allParticipants);
+      }
+      
+      // Support tickets - usar método real quando disponível
+      const ticketsData = await messageService.getSupportTicketsReal();
       setSupportTickets(ticketsData as any);
       
-      // Extrair participantes únicos de todas as rifas
-      // Get participants from users table instead
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'user');
-      
-      // Get participants from users table
-      const allParticipants: any[] = usersData?.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        city: '',
-        state: '',
-        registration_date: user.created_at,
-        total_tickets: 0,
-        total_spent: 0,
-        raffles_participated: 0,
-        wins: 0,
-        status: user.status as "active" | "inactive" | "blocked",
-        avatar: user.avatar_url,
-        last_activity: user.updated_at
-      })) || [];
-      setParticipants(allParticipants);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -289,15 +296,6 @@ export default function Messages() {
     setRaffleParticipants([]);
   };
 
-  const handleUseTemplate = (template: Template) => {
-    setNewMessage({
-      ...newMessage,
-      subject: template.subject,
-      content: template.content
-    });
-    setSelectedTemplate(template);
-  };
-
   const handleRaffleSelection = async (raffleId: string) => {
     setSelectedRaffle(raffleId);
     // Get participants for this raffle from tickets table
@@ -354,7 +352,11 @@ export default function Messages() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Mensagens Enviadas</p>
-                <p className="text-2xl font-bold text-foreground">247</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{messageStats.messagesSent}</p>
+                )}
               </div>
               <Send className="w-8 h-8 text-blue-500" />
             </div>
@@ -366,7 +368,11 @@ export default function Messages() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Taxa de Abertura</p>
-                <p className="text-2xl font-bold text-foreground">72%</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{messageStats.openRate}%</p>
+                )}
               </div>
               <Eye className="w-8 h-8 text-green-500" />
             </div>
@@ -378,7 +384,11 @@ export default function Messages() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Taxa de Clique</p>
-                <p className="text-2xl font-bold text-foreground">34%</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{messageStats.clickRate}%</p>
+                )}
               </div>
               <MessageSquare className="w-8 h-8 text-purple-500" />
             </div>
@@ -390,7 +400,11 @@ export default function Messages() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground-muted">Contatos Ativos</p>
-                <p className="text-2xl font-bold text-foreground">1,234</p>
+                {isLoading ? (
+                  <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{messageStats.totalContacts}</p>
+                )}
               </div>
               <Users className="w-8 h-8 text-orange-500" />
             </div>
@@ -401,7 +415,6 @@ export default function Messages() {
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList>
           <TabsTrigger value="messages">Mensagens</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="contacts">Contatos</TabsTrigger>
           <TabsTrigger value="tickets">
             Tickets de Suporte
@@ -498,41 +511,6 @@ export default function Messages() {
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Templates de Mensagem</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templates.map((template) => (
-                  <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium">{template.name}</h3>
-                          {getCategoryBadge(template.category)}
-                        </div>
-                        <p className="text-sm font-medium text-foreground-muted">{template.subject}</p>
-                        <p className="text-xs text-foreground-muted">
-                          {template.content.substring(0, 80)}...
-                        </p>
-                        <Button 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => handleUseTemplate(template)}
-                        >
-                          Usar Template
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 ))}
               </div>
             </CardContent>
