@@ -879,7 +879,7 @@ export default function Messages() {
                                     message: ticketResponse
                                   },
                                   {
-                                    id: "admin-id", // TODO: Get real admin ID
+                                    id: user?.id || "",
                                     name: "Admin"
                                   }
                                 );
