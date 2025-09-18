@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useState } from "react";
+import TermsOfUseModal from "@/components/TermsOfUseModal";
 import { 
   Facebook, 
   Instagram, 
@@ -15,6 +17,7 @@ import {
 const Footer = () => {
   const navigate = useNavigate();
   const { settings } = useSettings();
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   const handleSmoothScroll = (targetId: string) => {
     const element = document.getElementById(targetId);
@@ -159,9 +162,12 @@ const Footer = () => {
             
             {/* Legal Links */}
             <div className="flex flex-wrap gap-4 text-xs text-foreground-muted">
-              <a href="#" className="hover:text-primary transition-colors">
+              <button 
+                onClick={() => setIsTermsModalOpen(true)}
+                className="hover:text-primary transition-colors cursor-pointer"
+              >
                 Termos de Uso
-              </a>
+              </button>
               <span>•</span>
               <a href="#" className="hover:text-primary transition-colors">
                 Política de Privacidade
@@ -180,6 +186,11 @@ const Footer = () => {
           </div>
         </div>
       </div>
+      
+      <TermsOfUseModal 
+        isOpen={isTermsModalOpen} 
+        onClose={() => setIsTermsModalOpen(false)} 
+      />
     </footer>
   );
 };
