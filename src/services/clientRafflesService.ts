@@ -19,7 +19,7 @@ export interface ClientRaffle {
 
 export class ClientRafflesService {
   
-  static async getActiveRaffles(userId: string): Promise<ClientRaffle[]> {
+  static async getActiveRaffles(userEmail: string): Promise<ClientRaffle[]> {
     try {
       // Get active raffles
       const { data: raffles, error: rafflesError } = await supabase
@@ -34,7 +34,7 @@ export class ClientRafflesService {
       const { data: userTickets, error: ticketsError } = await supabase
         .from('tickets')
         .select('raffle_id, number')
-        .eq('buyer_email', userId)
+        .eq('buyer_email', userEmail)
         .eq('status', 'sold');
 
       if (ticketsError) throw ticketsError;
@@ -64,13 +64,13 @@ export class ClientRafflesService {
     }
   }
 
-  static async getCompletedRaffles(userId: string): Promise<ClientRaffle[]> {
+  static async getCompletedRaffles(userEmail: string): Promise<ClientRaffle[]> {
     try {
       // Get completed raffles where user participated
       const { data: userTickets, error: ticketsError } = await supabase
         .from('tickets')
         .select('raffle_id, number')
-        .eq('buyer_email', userId)
+        .eq('buyer_email', userEmail)
         .eq('status', 'sold');
 
       if (ticketsError) throw ticketsError;
@@ -111,13 +111,13 @@ export class ClientRafflesService {
     }
   }
 
-  static async getFavoriteRaffles(userId: string): Promise<ClientRaffle[]> {
+  static async getFavoriteRaffles(userEmail: string): Promise<ClientRaffle[]> {
     try {
       // For now, return raffles where user has most tickets
       const { data: userTickets, error: ticketsError } = await supabase
         .from('tickets')
         .select('raffle_id, number')
-        .eq('buyer_email', userId)
+        .eq('buyer_email', userEmail)
         .eq('status', 'sold');
 
       if (ticketsError) throw ticketsError;

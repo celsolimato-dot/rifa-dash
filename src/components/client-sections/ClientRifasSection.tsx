@@ -30,7 +30,7 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.email) {
       loadRafflesData();
     }
   }, [user]);
@@ -39,9 +39,9 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
     try {
       setIsLoading(true);
       const [active, finished, available] = await Promise.all([
-        ClientRafflesService.getActiveRaffles(user!.id),
-        ClientRafflesService.getCompletedRaffles(user!.id),
-        ClientRafflesService.getActiveRaffles(user!.id) // Use same for now
+        ClientRafflesService.getActiveRaffles(user!.email),
+        ClientRafflesService.getCompletedRaffles(user!.email),
+        ClientRafflesService.getActiveRaffles(user!.email) // Use same for now
       ]);
       
       setActiveRaffles(active);
@@ -56,15 +56,15 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
 
 
 
-  const filteredActiveRaffles = activeRaffles.filter(raffle =>
+  const filteredActiveRaffles = activeRaffles?.filter(raffle =>
     raffle.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     raffle.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
-  const filteredFinishedRaffles = finishedRaffles.filter(raffle =>
+  const filteredFinishedRaffles = finishedRaffles?.filter(raffle =>
     raffle.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     raffle.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
