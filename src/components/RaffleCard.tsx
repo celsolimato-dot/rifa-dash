@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Users, Trophy, Eye, Timer, Calendar } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { NumberSelectionModal } from "./NumberSelectionModal";
 import { AuthModal } from "./AuthModal";
 import { RaffleDetailsModal } from "./RaffleDetailsModal";
@@ -131,82 +132,160 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
   };
   
   return (
-    <div className={`group relative bg-gradient-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-border-hover hover:shadow-card-hover hover:scale-105 ${
+    <div className={`group relative bg-gradient-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-border-hover hover:shadow-card-hover hover-scale ${
       featured ? 'ring-2 ring-accent-gold ring-opacity-50' : ''
     }`}>
-      {/* Featured Badge */}
-      {featured && (
-        <Badge className="absolute top-3 left-3 z-10 bg-gradient-gold text-primary-foreground">
-          <Trophy className="w-3 h-3 mr-1" />
-          Em Destaque
-        </Badge>
-      )}
       
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden">
-        <img 
-          src={image} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+      {/* Enhanced Image Section with Carousel */}
+      <div className="relative group/image overflow-hidden">
+        <div className="aspect-[16/10] bg-background-secondary">
+          {image ? (
+            <Carousel className="w-full h-full">
+              <CarouselContent className="h-full">
+                {/* Primary Image */}
+                <CarouselItem className="h-full">
+                  <img 
+                    src={image} 
+                    alt={title}
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="hidden flex items-center justify-center w-full h-full bg-background-secondary">
+                    <Trophy className="w-16 h-16 text-foreground-muted animate-pulse" />
+                  </div>
+                </CarouselItem>
+                
+                {/* Additional Images - Demo variations */}
+                <CarouselItem className="h-full">
+                  <img 
+                    src={image}
+                    alt={`${title} - Vista 2`}
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                    style={{ filter: 'brightness(0.95) contrast(1.05)' }}
+                  />
+                </CarouselItem>
+                <CarouselItem className="h-full">
+                  <img 
+                    src={image}
+                    alt={`${title} - Vista 3`}
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                    style={{ filter: 'brightness(1.05) contrast(0.95)' }}
+                  />
+                </CarouselItem>
+              </CarouselContent>
+              
+              {/* Carousel Controls - Only show on hover */}
+              <div className="opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
+                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 text-white border-none hover:bg-black/90 w-8 h-8" />
+                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 text-white border-none hover:bg-black/90 w-8 h-8" />
+              </div>
+              
+              {/* Image Indicator Dots */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
+                <div className="w-2 h-2 rounded-full bg-white/80 shadow-sm"></div>
+                <div className="w-2 h-2 rounded-full bg-white/40"></div>
+                <div className="w-2 h-2 rounded-full bg-white/40"></div>
+              </div>
+            </Carousel>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full">
+              <Trophy className="w-16 h-16 text-foreground-muted animate-pulse" />
+            </div>
+          )}
+        </div>
+        
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
+        
+        {/* Floating Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+          {featured && (
+            <Badge className="bg-gradient-gold text-primary-foreground shadow-lg animate-pulse">
+              <Trophy className="w-3 h-3 mr-1" />
+              Em Destaque
+            </Badge>
+          )}
+        </div>
         
         {/* Timer Badge */}
-        <Badge className="absolute top-3 right-3 bg-background-secondary/80 backdrop-blur-sm text-foreground">
+        <Badge className="absolute top-3 right-3 z-10 bg-red-500/90 text-white shadow-lg animate-fade-in">
           <Timer className="w-3 h-3 mr-1" />
-          {timeLeft}
+          {timeLeft || '2 dias'}
         </Badge>
       </div>
       
-      {/* Content */}
+      {/* Enhanced Content */}
       <div className="p-6 space-y-4">
         
         {/* Title & Price */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="space-y-3">
+          <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
             {title}
           </h3>
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-accent-gold">
-              R$ {safeTicketPrice.toFixed(2).replace('.', ',')}
-            </span>
-            <span className="text-sm text-foreground-muted">por número</span>
+          <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-foreground-muted text-sm block">Preço do Bilhete</span>
+                <span className="text-3xl font-bold text-accent-gold">
+                  R$ {safeTicketPrice.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <span className="text-sm text-foreground-muted font-medium">por número</span>
+            </div>
           </div>
         </div>
         
-        {/* Progress */}
-        <div className="space-y-2">
+        {/* Enhanced Progress */}
+        <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-foreground-muted">Progresso da Rifa</span>
-            <span className="text-foreground font-medium">{progress.toFixed(0)}%</span>
+            <span className="text-foreground-muted font-medium">Progresso da Rifa</span>
+            <span className="text-foreground font-bold">{progress.toFixed(0)}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <div className="relative">
+            <Progress value={progress} className="h-3 bg-background-secondary/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/40 rounded-full opacity-50"></div>
+          </div>
           <div className="flex items-center justify-between text-xs text-foreground-muted">
-            <span className="flex items-center">
+            <span className="flex items-center font-medium">
               <Users className="w-3 h-3 mr-1" />
               {safeSoldTickets} vendidos
             </span>
-            <span>{remainingTickets} restantes</span>
+            <span className="font-medium">{remainingTickets} restantes</span>
           </div>
         </div>
         
         {/* Draw Date */}
-        <div className="flex items-center text-sm text-foreground-muted">
+        <div className="flex items-center justify-center text-sm text-foreground-muted bg-background-secondary/40 rounded-lg p-3 border border-background-secondary">
           <Calendar className="w-4 h-4 mr-2 text-primary" />
-          Sorteio em: <span className="font-medium ml-1">{drawDateString}</span>
+          <span className="font-medium">
+            Sorteio: {drawDateString ? new Date(drawDateString).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            }) : 'Data a definir'}
+          </span>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
+        {/* Enhanced Action Buttons */}
+        <div className="flex gap-3 pt-2">
           <Button 
             variant="hero" 
-            className="flex-1 cursor-pointer"
+            className="flex-1 cursor-pointer bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold py-3 rounded-xl transition-all duration-300 hover-scale shadow-lg hover:shadow-primary/25"
             onClick={handleParticipate}
           >
-            Participar Agora
+            🎟️ Participar Agora
           </Button>
-          <Button variant="outline" size="default" onClick={handleViewDetails}>
-            Ver Detalhes
+          <Button 
+            variant="outline" 
+            size="default" 
+            onClick={handleViewDetails}
+            className="border-primary/30 text-primary hover:bg-primary/5 font-semibold py-3 rounded-xl transition-all duration-300 hover-scale"
+          >
+            <Eye className="w-4 h-4 mr-1" />
+            Detalhes
           </Button>
         </div>
       </div>

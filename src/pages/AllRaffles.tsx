@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { RaffleService, Raffle } from "../services/raffleService";
 import { 
   Dialog,
@@ -339,103 +340,219 @@ const AllRaffles = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRaffles.map((raffle) => (
-                  <Card key={raffle.id} className="bg-gradient-card border-border hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden mb-4">
-                        {raffle.image_url ? (
-                          <img 
-                            src={raffle.image_url} 
-                            alt={raffle.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <div className={`flex items-center justify-center w-full h-full ${raffle.image_url ? 'hidden' : ''}`}>
-                          <Trophy className="w-12 h-12 text-foreground-muted" />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-foreground text-lg line-clamp-2">{raffle.title}</h3>
-                          {getStatusBadge(raffle.status)}
-                        </div>
-                        
-                        <p className="text-foreground-muted text-sm line-clamp-2">{raffle.description}</p>
-                        
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-foreground-muted">Preço:</span>
-                          <span className="font-semibold text-foreground">R$ {raffle.ticket_price.toFixed(2)}</span>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-foreground-muted">Progresso:</span>
-                            <span className="text-foreground">{raffle.sold_tickets}/{raffle.total_tickets}</span>
-                          </div>
-                          <div className="w-full bg-background-secondary rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full transition-all"
-                              style={{ width: `${(raffle.sold_tickets / raffle.total_tickets) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center text-sm text-foreground-muted">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>Sorteio: {new Date(raffle.draw_date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div className="flex gap-2 mt-4">
-                            <Button 
-                              variant="outline" 
-                              className="flex-1"
-                              onClick={() => setSelectedRaffle(raffle)}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver Detalhes
-                            </Button>
-                            <Button 
-                              variant="secondary" 
-                              className="flex-1"
-                              onClick={() => navigate(`/admin/rifas/editar/${raffle.id}`)}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Editar
-                            </Button>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{selectedRaffle?.title}</DialogTitle>
-                            <DialogDescription>
-                              Detalhes completos da rifa
-                            </DialogDescription>
-                          </DialogHeader>
-                          {selectedRaffle && (
-                            <div className="space-y-6">
-                              <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
-                                {selectedRaffle.image_url ? (
+                  <Card key={raffle.id} className="bg-gradient-card border-border hover:shadow-lg transition-all duration-300 hover-scale overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Image Carousel Section */}
+                      <div className="relative group">
+                        <div className="aspect-[16/10] bg-background-secondary overflow-hidden">
+                          {raffle.image_url ? (
+                            <Carousel className="w-full h-full">
+                              <CarouselContent className="h-full">
+                                {/* Primary Image */}
+                                <CarouselItem className="h-full">
                                   <img 
-                                    src={selectedRaffle.image_url} 
-                                    alt={selectedRaffle.title}
-                                    className="w-full h-full object-cover"
+                                    src={raffle.image_url} 
+                                    alt={raffle.title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     onError={(e) => {
                                       e.currentTarget.style.display = 'none';
                                       e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                     }}
                                   />
-                                ) : null}
-                                <div className={`flex items-center justify-center w-full h-full ${selectedRaffle.image_url ? 'hidden' : ''}`}>
-                                  <Trophy className="w-16 h-16 text-foreground-muted" />
-                                </div>
+                                  <div className="hidden flex items-center justify-center w-full h-full bg-background-secondary">
+                                    <Trophy className="w-16 h-16 text-foreground-muted" />
+                                  </div>
+                                </CarouselItem>
+                                
+                                {/* Additional Images - Mock for demonstration */}
+                                {raffle.image_url && (
+                                  <>
+                                    <CarouselItem className="h-full">
+                                      <img 
+                                        src={raffle.image_url}
+                                        alt={`${raffle.title} - Imagem 2`}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        style={{ filter: 'brightness(0.9)' }}
+                                      />
+                                    </CarouselItem>
+                                    <CarouselItem className="h-full">
+                                      <img 
+                                        src={raffle.image_url}
+                                        alt={`${raffle.title} - Imagem 3`}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        style={{ filter: 'brightness(1.1)' }}
+                                      />
+                                    </CarouselItem>
+                                  </>
+                                )}
+                              </CarouselContent>
+                              
+                              {/* Carousel Controls - Only show on hover */}
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white border-none hover:bg-black/80 w-8 h-8" />
+                                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white border-none hover:bg-black/80 w-8 h-8" />
                               </div>
+                              
+                              {/* Image Indicator Dots */}
+                              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="w-2 h-2 rounded-full bg-white/60"></div>
+                                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                              </div>
+                            </Carousel>
+                          ) : (
+                            <div className="flex items-center justify-center w-full h-full">
+                              <Trophy className="w-16 h-16 text-foreground-muted" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Status Badge Overlay */}
+                        <div className="absolute top-3 left-3">
+                          {getStatusBadge(raffle.status)}
+                        </div>
+                        
+                        {/* Featured Badge */}
+                        {raffle.status === 'active' && (
+                          <div className="absolute top-3 right-3">
+                            <Badge className="bg-accent-gold text-black font-semibold animate-pulse">
+                              Destaque
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Card Content */}
+                      <div className="p-6 space-y-4">
+                        <div className="space-y-2">
+                          <h3 className="font-bold text-foreground text-xl line-clamp-2 leading-tight">
+                            {raffle.title}
+                          </h3>
+                          <p className="text-foreground-muted text-sm line-clamp-2 leading-relaxed">
+                            {raffle.description}
+                          </p>
+                        </div>
+                        
+                        {/* Price Section */}
+                        <div className="bg-background-secondary/50 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-foreground-muted text-sm">Preço do Bilhete:</span>
+                            <span className="font-bold text-primary text-lg">
+                              R$ {raffle.ticket_price.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Progress Section */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-foreground-muted">Progresso de Vendas:</span>
+                            <span className="text-foreground font-medium">
+                              {raffle.sold_tickets}/{raffle.total_tickets}
+                            </span>
+                          </div>
+                          <div className="w-full bg-background-secondary rounded-full h-3 overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-primary to-primary/80 h-3 rounded-full transition-all duration-700 ease-out"
+                              style={{ width: `${Math.min((raffle.sold_tickets / raffle.total_tickets) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs text-foreground-muted">
+                            <span>{((raffle.sold_tickets / raffle.total_tickets) * 100).toFixed(1)}% vendido</span>
+                            <span>{raffle.total_tickets - raffle.sold_tickets} restam</span>
+                          </div>
+                        </div>
+                        
+                        {/* Draw Date */}
+                        <div className="flex items-center text-sm text-foreground-muted bg-background-secondary/30 rounded-lg p-2">
+                          <Calendar className="w-4 h-4 mr-2 text-primary" />
+                          <span>Sorteio: {new Date(raffle.draw_date).toLocaleDateString('pt-BR')}</span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div className="flex gap-2 pt-2">
+                              <Button 
+                                variant="outline" 
+                                className="flex-1 hover-scale"
+                                onClick={() => setSelectedRaffle(raffle)}
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Ver Detalhes
+                              </Button>
+                              <Button 
+                                variant="default" 
+                                className="flex-1 bg-primary hover:bg-primary/90 transition-all duration-300"
+                                onClick={() => navigate(`/admin/rifas/editar/${raffle.id}`)}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Editar
+                              </Button>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle className="text-2xl">{selectedRaffle?.title}</DialogTitle>
+                              <DialogDescription>
+                                Detalhes completos da rifa
+                              </DialogDescription>
+                            </DialogHeader>
+                            {selectedRaffle && (
+                              <div className="space-y-6">
+                                {/* Enhanced Image Gallery */}
+                                <div className="relative">
+                                  <Carousel className="w-full">
+                                    <CarouselContent>
+                                      <CarouselItem>
+                                        <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
+                                          {selectedRaffle.image_url ? (
+                                            <img 
+                                              src={selectedRaffle.image_url} 
+                                              alt={selectedRaffle.title}
+                                              className="w-full h-full object-cover"
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                              }}
+                                            />
+                                          ) : null}
+                                          <div className={`flex items-center justify-center w-full h-full ${selectedRaffle.image_url ? 'hidden' : ''}`}>
+                                            <Trophy className="w-20 h-20 text-foreground-muted" />
+                                          </div>
+                                        </div>
+                                      </CarouselItem>
+                                      
+                                      {/* Additional demo images */}
+                                      {selectedRaffle.image_url && (
+                                        <>
+                                          <CarouselItem>
+                                            <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
+                                              <img 
+                                                src={selectedRaffle.image_url}
+                                                alt={`${selectedRaffle.title} - Detalhes`}
+                                                className="w-full h-full object-cover"
+                                                style={{ filter: 'brightness(0.95) contrast(1.05)' }}
+                                              />
+                                            </div>
+                                          </CarouselItem>
+                                          <CarouselItem>
+                                            <div className="aspect-video bg-background-secondary rounded-lg overflow-hidden">
+                                              <img 
+                                                src={selectedRaffle.image_url}
+                                                alt={`${selectedRaffle.title} - Vista adicional`}
+                                                className="w-full h-full object-cover"
+                                                style={{ filter: 'brightness(1.05) contrast(0.95)' }}
+                                              />
+                                            </div>
+                                          </CarouselItem>
+                                        </>
+                                      )}
+                                    </CarouselContent>
+                                    <CarouselPrevious className="left-4 bg-black/60 text-white border-none hover:bg-black/80" />
+                                    <CarouselNext className="right-4 bg-black/60 text-white border-none hover:bg-black/80" />
+                                  </Carousel>
+                                </div>
                               
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -475,10 +592,11 @@ const AllRaffles = () => {
                                   {((selectedRaffle.sold_tickets / selectedRaffle.total_tickets) * 100).toFixed(1)}% vendido
                                 </p>
                               </div>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
