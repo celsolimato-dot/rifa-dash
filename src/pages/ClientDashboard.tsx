@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useClientNavigation } from "@/hooks/useClientNavigation";
@@ -8,6 +8,7 @@ import { ClientRifasSection } from "@/components/client-sections/ClientRifasSect
 import { ClientHistoricoSection } from "@/components/client-sections/ClientHistoricoSection";
 import { ClientPerfilSection } from "@/components/client-sections/ClientPerfilSection";
 import { ClientSuporteSection } from "@/components/client-sections/ClientSuporteSection";
+import { NumberSelectionModal } from "@/components/NumberSelectionModal";
 import { 
   Breadcrumb,
   BreadcrumbList,
@@ -28,13 +29,29 @@ const ClientDashboard = () => {
     canGoBack
   } = useClientNavigation('dashboard');
 
+  // Estado para controlar o modal de seleção de números
+  const [selectedRaffle, setSelectedRaffle] = useState<any>(null);
+  const [isNumberModalOpen, setIsNumberModalOpen] = useState(false);
+
+  // Função para abrir o modal de seleção de números
+  const handleOpenNumberModal = (raffle: any) => {
+    setSelectedRaffle(raffle);
+    setIsNumberModalOpen(true);
+  };
+
+  // Função para fechar o modal de seleção de números
+  const handleCloseNumberModal = () => {
+    setIsNumberModalOpen(false);
+    setSelectedRaffle(null);
+  };
+
   // Função para renderizar o conteúdo baseado na seção atual
   const renderCurrentSection = () => {
     switch (currentSection) {
       case 'dashboard':
         return <ClientDashboardSection />;
       case 'rifas':
-        return <ClientRifasSection />;
+        return <ClientRifasSection onOpenNumberModal={handleOpenNumberModal} />;
       case 'historico':
         return <ClientHistoricoSection />;
       case 'perfil':
@@ -109,6 +126,23 @@ const ClientDashboard = () => {
           {renderCurrentSection()}
         </main>
       </div>
+
+      {/* Modal de Seleção de Números */}
+      {selectedRaffle && (
+        <NumberSelectionModal
+          isOpen={isNumberModalOpen}
+          onClose={handleCloseNumberModal}
+          raffle={{
+            id: selectedRaffle.id,
+            title: selectedRaffle.title,
+            image: selectedRaffle.imageUrl || '',
+            price: selectedRaffle.ticketPrice,
+            totalTickets: selectedRaffle.totalTickets,
+            soldTickets: selectedRaffle.soldTickets,
+            drawDate: selectedRaffle.drawDate,
+          }}
+        />
+      )}
     </div>
   );
 };
