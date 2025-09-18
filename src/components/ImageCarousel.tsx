@@ -48,7 +48,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         <img
           src={imageViews[currentIndex]}
           alt={`${title} - Imagem ${currentIndex + 1}`}
-          className="w-full h-full object-cover transition-all duration-500"
+          className="w-full h-full object-contain bg-background-secondary transition-all duration-500"
         />
         
         {/* Gradient Overlay */}
