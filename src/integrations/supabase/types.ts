@@ -584,6 +584,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_affiliate_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          commission_percentage: number
+          min_payout: number
+        }[]
+      }
       get_testimonial_stats: {
         Args: { raffle_id_param: string }
         Returns: {
