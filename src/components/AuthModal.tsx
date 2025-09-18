@@ -19,6 +19,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { validateCPF as validateCPFUtil, formatCPF as formatCPFUtil, validatePhone as validatePhoneUtil, formatPhone as formatPhoneUtil } from "@/utils/cpfValidator";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -81,32 +82,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     onClose();
   };
 
-  const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    }
-    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  };
-
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  const validateCPF = (cpf: string) => {
-    const numbers = cpf.replace(/\D/g, '');
-    return numbers.length === 11;
-  };
-
-  const validatePhone = (phone: string) => {
-    const numbers = phone.replace(/\D/g, '');
-    return numbers.length >= 10 && numbers.length <= 11;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -161,13 +139,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       return;
     }
 
-    if (!validateCPF(registerForm.cpf)) {
-      setError('CPF inválido');
+    if (!validateCPFUtil(registerForm.cpf)) {
+      setError('CPF inválido. Por favor, insira um CPF válido e ativo na Receita Federal.');
       return;
     }
 
-    if (!validatePhone(registerForm.phone)) {
-      setError('Telefone inválido');
+    if (!validatePhoneUtil(registerForm.phone)) {
+      setError('Telefone inválido. Por favor, insira um telefone válido com DDD.');
       return;
     }
 
@@ -332,7 +310,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="register-cpf">CPF *</Label>
+                <Label htmlFor="register-cpf">CPF * <span className="text-xs text-foreground-muted">(somente CPFs válidos)</span></Label>
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -341,8 +319,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     placeholder="000.000.000-00"
                     value={registerForm.cpf}
                     onChange={(e) => {
-                      const formatted = formatCPF(e.target.value);
-                      if (formatted.length <= 14) {
+                      const formatted = formatCPFUtil(e.target.value);
+                      if (formatted.replace(/\D/g, '').length <= 11) {
                         setRegisterForm({ ...registerForm, cpf: formatted });
                       }
                     }}
@@ -362,8 +340,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     placeholder="(11) 99999-9999"
                     value={registerForm.phone}
                     onChange={(e) => {
-                      const formatted = formatPhone(e.target.value);
-                      if (formatted.length <= 15) {
+                      const formatted = formatPhoneUtil(e.target.value);
+                      if (formatted.replace(/\D/g, '').length <= 11) {
                         setRegisterForm({ ...registerForm, phone: formatted });
                       }
                     }}

@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Shield, LogIn } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Shield, LogIn, CreditCard } from 'lucide-react';
+import { validateCPF, formatCPF, validatePhone, formatPhone } from '@/utils/cpfValidator';
 
 const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +16,7 @@ const Auth = () => {
   const [registerData, setRegisterData] = useState({
     name: '',
     email: '',
+    cpf: '',
     phone: '',
     password: '',
     confirmPassword: ''
@@ -51,6 +53,47 @@ const Auth = () => {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação de campos obrigatórios
+    if (!registerData.name || !registerData.email || !registerData.cpf || 
+        !registerData.phone || !registerData.password || !registerData.confirmPassword) {
+      toast({
+        title: "Erro no cadastro",
+        description: "Todos os campos são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação de CPF
+    if (!validateCPF(registerData.cpf)) {
+      toast({
+        title: "CPF Inválido",
+        description: "Por favor, insira um CPF válido e ativo na Receita Federal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação de telefone
+    if (!validatePhone(registerData.phone)) {
+      toast({
+        title: "Telefone Inválido",
+        description: "Por favor, insira um telefone válido com DDD.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação de senha
+    if (registerData.password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (registerData.password !== registerData.confirmPassword) {
       toast({
@@ -191,7 +234,7 @@ const Auth = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reg-name">Nome Completo</Label>
+                    <Label htmlFor="reg-name">Nome Completo *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
                       <Input
@@ -206,7 +249,7 @@ const Auth = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email">Email</Label>
+                    <Label htmlFor="reg-email">Email *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
                       <Input
@@ -220,9 +263,29 @@ const Auth = () => {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-cpf">CPF * <span className="text-xs text-foreground-muted">(somente CPFs válidos)</span></Label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
+                      <Input
+                        id="reg-cpf"
+                        placeholder="000.000.000-00"
+                        className="pl-10"
+                        value={registerData.cpf}
+                        onChange={(e) => {
+                          const formatted = formatCPF(e.target.value);
+                          if (formatted.replace(/\D/g, '').length <= 11) {
+                            setRegisterData({...registerData, cpf: formatted});
+                          }
+                        }}
+                        required
+                      />
+                    </div>
+                  </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="reg-phone">Telefone</Label>
+                    <Label htmlFor="reg-phone">Telefone *</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
                       <Input
@@ -230,14 +293,19 @@ const Auth = () => {
                         placeholder="(11) 99999-9999"
                         className="pl-10"
                         value={registerData.phone}
-                        onChange={(e) => setRegisterData({...registerData, phone: e.target.value})}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          if (formatted.replace(/\D/g, '').length <= 11) {
+                            setRegisterData({...registerData, phone: formatted});
+                          }
+                        }}
                         required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="reg-password">Senha</Label>
+                    <Label htmlFor="reg-password">Senha * <span className="text-xs text-foreground-muted">(mínimo 6 caracteres)</span></Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
                       <Input
@@ -248,12 +316,13 @@ const Auth = () => {
                         value={registerData.password}
                         onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
                         required
+                        minLength={6}
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="reg-confirm-password">Confirmar Senha</Label>
+                    <Label htmlFor="reg-confirm-password">Confirmar Senha *</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-foreground-muted" />
                       <Input
