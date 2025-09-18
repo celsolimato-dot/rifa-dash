@@ -146,7 +146,12 @@ const Footer = () => {
             {/* Social Media */}
             <div className="pt-4">
               <div className="flex space-x-3">
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full hover:bg-primary/10"
+                  onClick={() => window.open('https://www.instagram.com/p/DOGbNKyjeQZ/', '_blank')}
+                >
                   <Instagram className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
