@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ClientRafflesService, ClientRaffle } from '@/services/clientRafflesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -14,7 +15,9 @@ import {
   Trophy,
   Filter,
   Eye,
-  Ticket
+  Ticket,
+  X,
+  Award
 } from "lucide-react";
 
 interface ClientRifasSectionProps {
@@ -27,6 +30,8 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
   const [finishedRaffles, setFinishedRaffles] = useState<ClientRaffle[]>([]);
   const [availableRaffles, setAvailableRaffles] = useState<ClientRaffle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRaffle, setSelectedRaffle] = useState<ClientRaffle | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -77,10 +82,25 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
     });
   };
 
+  const handleViewRaffle = (raffle: ClientRaffle) => {
+    setSelectedRaffle(raffle);
+    setIsViewModalOpen(true);
+  };
+
   const RaffleCard = ({ raffle, isActive = true }: { raffle: any, isActive?: boolean }) => (
     <Card className="bg-gradient-card border-border overflow-hidden">
-      <div className="aspect-video bg-muted flex items-center justify-center">
-        <Trophy className="w-12 h-12 text-muted-foreground" />
+      <div className="aspect-video bg-muted overflow-hidden">
+        {raffle.imageUrl ? (
+          <img 
+            src={raffle.imageUrl} 
+            alt={raffle.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <Trophy className="w-12 h-12 text-muted-foreground" />
+          </div>
+        )}
       </div>
       
       <CardHeader className="pb-3">
@@ -150,7 +170,7 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
               <span>Progresso:</span>
             </div>
             <p className="font-medium text-foreground">
-              {raffle.soldNumbers}/{raffle.totalNumbers}
+              {raffle.soldTickets}/{raffle.totalTickets}
             </p>
           </div>
         </div>
@@ -159,12 +179,12 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
         <div>
           <div className="flex justify-between text-xs text-foreground-muted mb-1">
             <span>Vendidos</span>
-            <span>{Math.round((raffle.soldNumbers / raffle.totalNumbers) * 100)}%</span>
+            <span>{Math.round((raffle.soldTickets / raffle.totalTickets) * 100)}%</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
               className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(raffle.soldNumbers / raffle.totalNumbers) * 100}%` }}
+              style={{ width: `${(raffle.soldTickets / raffle.totalTickets) * 100}%` }}
             />
           </div>
         </div>
@@ -179,7 +199,11 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
             >
               Comprar Mais
             </Button>
-            <Button size="sm" variant="outline">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleViewRaffle(raffle)}
+            >
               <Eye className="w-4 h-4" />
             </Button>
           </div>
@@ -298,6 +322,141 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Visualização */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-foreground">
+              {selectedRaffle?.title}
+            </DialogTitle>
+            <DialogDescription className="text-foreground-muted">
+              Detalhes completos da rifa
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRaffle && (
+            <div className="space-y-6">
+              {/* Imagem Principal */}
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                {selectedRaffle.imageUrl ? (
+                  <img 
+                    src={selectedRaffle.imageUrl} 
+                    alt={selectedRaffle.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <Trophy className="w-16 h-16 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+
+              {/* Informações Principais */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Descrição</h3>
+                    <p className="text-foreground-muted">{selectedRaffle.description}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Prêmio</h3>
+                    <div className="flex items-center space-x-2">
+                      <Award className="w-4 h-4 text-primary" />
+                      <span className="text-foreground">{selectedRaffle.prize}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Categoria</h3>
+                    <Badge variant="secondary">{selectedRaffle.category}</Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Data do Sorteio</h3>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span className="text-foreground">{formatDate(selectedRaffle.drawDate)}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Progresso</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-foreground-muted">Vendidos</span>
+                        <span className="text-foreground font-medium">
+                          {selectedRaffle.soldTickets}/{selectedRaffle.totalTickets}
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-primary h-3 rounded-full transition-all duration-300"
+                          style={{ width: `${(selectedRaffle.soldTickets / selectedRaffle.totalTickets) * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-foreground-muted text-right">
+                        {Math.round((selectedRaffle.soldTickets / selectedRaffle.totalTickets) * 100)}% vendido
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Valor do Prêmio</h3>
+                    <div className="flex items-center space-x-2">
+                      <Award className="w-4 h-4 text-primary" />
+                      <span className="text-foreground">
+                        R$ {selectedRaffle.prizeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seus Números */}
+              <div>
+                <h3 className="font-semibold text-foreground mb-3">Seus Números Participantes</h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedRaffle.userTickets || []).map((number: string) => (
+                    <Badge 
+                      key={number} 
+                      variant="default"
+                      className="px-3 py-1"
+                    >
+                      {parseInt(number).toString().padStart(2, '0')}
+                    </Badge>
+                  ))}
+                </div>
+                {(!selectedRaffle.userTickets || selectedRaffle.userTickets.length === 0) && (
+                  <p className="text-foreground-muted">Você ainda não possui números nesta rifa.</p>
+                )}
+              </div>
+
+              {/* Ações */}
+              <div className="flex space-x-3 pt-4 border-t border-border">
+                <Button 
+                  className="flex-1"
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    onOpenNumberModal?.(selectedRaffle);
+                  }}
+                >
+                  Comprar Mais Números
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsViewModalOpen(false)}
+                >
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
