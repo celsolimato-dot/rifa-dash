@@ -112,7 +112,7 @@ const PublicRaffles = () => {
                 <img
                   src={raffle.image_url}
                   alt={raffle.title}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-48 object-contain bg-background-secondary"
                 />
                 <div className="absolute top-4 right-4">
                   {getStatusBadge(raffle.status)}
