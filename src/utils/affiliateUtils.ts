@@ -66,29 +66,14 @@ export const processAffiliateRegistration = async (newUserId: string): Promise<v
     
     if (affiliateError || !affiliate) {
       console.error('Affiliate not found:', affiliateError);
+      clearAffiliateCode();
       return;
     }
     
-    // Buscar configurações de comissão
-    const { data: settings } = await supabase
-      .from('affiliate_settings')
-      .select('commission_percentage')
-      .single();
-    
-    const commissionPercentage = settings?.commission_percentage || 10;
-    
-    // Criar registro de referência
-    const { error: referralError } = await supabase
-      .from('referrals')
-      .insert({
-        referrer_id: affiliate.user_id,
-        referred_user_id: newUserId,
-        commission_percentage: commissionPercentage,
-        status: 'pending'
-      });
-    
-    if (referralError) {
-      console.error('Error creating referral:', referralError);
+    // Não pode se auto-referenciar
+    if (affiliate.user_id === newUserId) {
+      console.log('User cannot refer themselves');
+      clearAffiliateCode();
       return;
     }
     
@@ -100,6 +85,8 @@ export const processAffiliateRegistration = async (newUserId: string): Promise<v
     
     if (updateError) {
       console.error('Error updating user referrer:', updateError);
+    } else {
+      console.log('User referrer updated successfully');
     }
     
     // Limpar código armazenado após processar
@@ -107,5 +94,6 @@ export const processAffiliateRegistration = async (newUserId: string): Promise<v
     
   } catch (error) {
     console.error('Error processing affiliate registration:', error);
+    clearAffiliateCode();
   }
 };

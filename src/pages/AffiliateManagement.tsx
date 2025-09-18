@@ -75,15 +75,20 @@ const AffiliateManagement = () => {
         return;
       }
 
-      // Para cada afiliado, buscar dados do usuário
+      // Para cada afiliado, buscar dados do usuário da tabela users
       const affiliatesWithUserData = await Promise.all(
         (affiliatesData || []).map(async (affiliate) => {
-          const { data: userData } = await supabase.auth.admin.getUserById(affiliate.user_id);
+          const { data: userData } = await supabase
+            .from('users')
+            .select('name, email')
+            .eq('id', affiliate.user_id)
+            .single();
+          
           return {
             ...affiliate,
-            user: userData?.user ? {
-              name: userData.user.user_metadata?.name || 'Usuário',
-              email: userData.user.email || ''
+            user: userData ? {
+              name: userData.name || 'Usuário',
+              email: userData.email || ''
             } : null
           };
         })
