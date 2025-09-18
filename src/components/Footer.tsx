@@ -4,6 +4,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useState } from "react";
 import TermsOfUseModal from "@/components/TermsOfUseModal";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
+import RegulamentModal from "@/components/RegulamentModal";
 import { 
   Facebook, 
   Instagram, 
@@ -20,6 +21,7 @@ const Footer = () => {
   const { settings } = useSettings();
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isRegulamentModalOpen, setIsRegulamentModalOpen] = useState(false);
 
   const handleSmoothScroll = (targetId: string) => {
     const element = document.getElementById(targetId);
@@ -178,9 +180,12 @@ const Footer = () => {
                 Política de Privacidade
               </button>
               <span>•</span>
-              <a href="#" className="hover:text-primary transition-colors">
+              <button 
+                onClick={() => setIsRegulamentModalOpen(true)}
+                className="hover:text-primary transition-colors cursor-pointer"
+              >
                 Regulamento
-              </a>
+              </button>
             </div>
             
             {/* Copyright */}
@@ -199,6 +204,10 @@ const Footer = () => {
       <PrivacyPolicyModal 
         isOpen={isPrivacyModalOpen} 
         onClose={() => setIsPrivacyModalOpen(false)} 
+      />
+      <RegulamentModal 
+        isOpen={isRegulamentModalOpen} 
+        onClose={() => setIsRegulamentModalOpen(false)} 
       />
     </footer>
   );
