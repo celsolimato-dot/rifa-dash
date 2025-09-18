@@ -327,6 +327,12 @@ export default function TestimonialsManagement() {
                         <p className="text-foreground mb-3">{testimonial.content}</p>
                         
                         <div className="grid grid-cols-2 gap-4 text-sm text-foreground-muted">
+                          {testimonial.winner_name && (
+                            <div>
+                              <span className="font-medium">Ganhador:</span>
+                              <span className="ml-1">{testimonial.winner_name}</span>
+                            </div>
+                          )}
                           {testimonial.winning_number && (
                             <div>
                               <span className="font-medium">Número Sorteado:</span>
@@ -334,9 +340,12 @@ export default function TestimonialsManagement() {
                             </div>
                           )}
                           <div>
-                            <span className="font-medium">Data:</span>
+                            <span className="font-medium">Data do Sorteio:</span>
                             <span className="ml-1">
-                              {new Date(testimonial.created_at).toLocaleDateString('pt-BR')}
+                              {testimonial.drawing_date 
+                                ? new Date(testimonial.drawing_date).toLocaleDateString('pt-BR')
+                                : new Date(testimonial.created_at).toLocaleDateString('pt-BR')
+                              }
                             </span>
                           </div>
                         </div>
@@ -410,6 +419,26 @@ export default function TestimonialsManagement() {
                 onChange={(e) => setFormData({...formData, content: e.target.value})}
                 rows={4}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground-muted">Nome do Ganhador</label>
+                <Input
+                  placeholder="Nome do ganhador"
+                  value={formData.winner_name || ''}
+                  onChange={(e) => setFormData({...formData, winner_name: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground-muted">Data do Sorteio</label>
+                <Input
+                  type="datetime-local"
+                  value={formData.drawing_date ? new Date(formData.drawing_date).toISOString().slice(0, 16) : ''}
+                  onChange={(e) => setFormData({...formData, drawing_date: e.target.value})}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

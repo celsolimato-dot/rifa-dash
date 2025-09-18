@@ -23,6 +23,8 @@ export type Database = {
           draw_date: string
           id: string
           image_url: string | null
+          image_url_2: string | null
+          image_url_3: string | null
           institution_logo: string | null
           institution_name: string | null
           prize: string
@@ -43,6 +45,8 @@ export type Database = {
           draw_date: string
           id?: string
           image_url?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           institution_logo?: string | null
           institution_name?: string | null
           prize: string
@@ -63,6 +67,8 @@ export type Database = {
           draw_date?: string
           id?: string
           image_url?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           institution_logo?: string | null
           institution_name?: string | null
           prize?: string
@@ -98,6 +104,7 @@ export type Database = {
           approved_by: string | null
           content: string
           created_at: string | null
+          drawing_date: string | null
           id: string
           raffle_id: string | null
           rating: number | null
@@ -105,6 +112,7 @@ export type Database = {
           type: string
           updated_at: string | null
           user_id: string | null
+          winner_name: string | null
           winning_number: string | null
         }
         Insert: {
@@ -112,6 +120,7 @@ export type Database = {
           approved_by?: string | null
           content: string
           created_at?: string | null
+          drawing_date?: string | null
           id?: string
           raffle_id?: string | null
           rating?: number | null
@@ -119,6 +128,7 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string | null
+          winner_name?: string | null
           winning_number?: string | null
         }
         Update: {
@@ -126,6 +136,7 @@ export type Database = {
           approved_by?: string | null
           content?: string
           created_at?: string | null
+          drawing_date?: string | null
           id?: string
           raffle_id?: string | null
           rating?: number | null
@@ -133,6 +144,7 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string | null
+          winner_name?: string | null
           winning_number?: string | null
         }
         Relationships: [

@@ -156,7 +156,10 @@ const Winners = () => {
                               </div>
                               <div className="text-xs text-foreground-muted flex items-center">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {new Date(testimonial.created_at || '').toLocaleDateString('pt-BR')}
+                                {testimonial.drawing_date 
+                                  ? new Date(testimonial.drawing_date).toLocaleDateString('pt-BR')
+                                  : new Date(testimonial.created_at || '').toLocaleDateString('pt-BR')
+                                }
                               </div>
                             </div>
                           </CardHeader>
@@ -166,10 +169,10 @@ const Winners = () => {
                             <div className="text-center space-y-2">
                               <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
                                 <span className="text-white font-bold text-xl">
-                                  {'Usuário'.split(' ').map(n => n[0]).join('')}
+                                  {(testimonial.winner_name || 'Usuário').split(' ').map(n => n[0]).join('')}
                                 </span>
                               </div>
-                              <h4 className="font-semibold text-foreground">Usuário</h4>
+                              <h4 className="font-semibold text-foreground">{testimonial.winner_name || 'Usuário'}</h4>
                               <p className="text-sm text-foreground-muted">Número sorteado: {testimonial.winning_number || 'N/A'}</p>
                             </div>
                             

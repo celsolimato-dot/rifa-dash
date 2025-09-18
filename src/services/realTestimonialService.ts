@@ -25,6 +25,7 @@ export class RealTestimonialService {
       .from('testimonials')
       .select('*')
       .eq('status', 'approved')
+      .order('drawing_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
     if (error) {
