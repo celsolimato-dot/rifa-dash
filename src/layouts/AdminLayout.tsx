@@ -3,7 +3,8 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Bell, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { ReactNode } from "react";
+import { AdminProfileModal } from "@/components/AdminProfileModal";
+import { ReactNode, useState } from "react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { user } = useAuth();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   return (
     <SidebarProvider>
@@ -47,11 +49,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                   <p className="font-medium text-foreground">{user?.name}</p>
                   <p className="text-foreground-muted">Administrador</p>
                 </div>
-                <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+                >
                   <span className="text-white font-semibold text-sm">
                     {user?.name?.charAt(0)}
                   </span>
-                </div>
+                </button>
               </div>
             </div>
           </header>
@@ -61,6 +66,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             {children}
           </main>
         </div>
+
+        {/* Admin Profile Modal */}
+        <AdminProfileModal 
+          isOpen={isProfileModalOpen} 
+          onClose={() => setIsProfileModalOpen(false)} 
+        />
       </div>
     </SidebarProvider>
   );
