@@ -227,7 +227,8 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
             className="flex-1 cursor-pointer bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold py-3 rounded-xl transition-all duration-300 hover-scale shadow-lg hover:shadow-primary/25"
             onClick={handleParticipate}
           >
-            🎟️ Participar Agora
+            <Trophy className="w-4 h-4 mr-2 text-white" />
+            Participar Agora
           </Button>
           <Button 
             variant="outline" 
