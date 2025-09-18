@@ -238,28 +238,11 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
     setIsGeneratingPix(true);
     
     try {
-      // Verificar se o token está configurado
-      const apiToken = import.meta.env.VITE_ABACATEPAY_TOKEN || 'abc_prod_eUZRexQ2QdtD0Z4nHKXbfEFs';
-      console.log('All env vars:', Object.keys(import.meta.env));
-      console.log('Token length:', apiToken?.length);
-      console.log('Token starts with:', apiToken?.substring(0, 10));
+      const amountInReais = totalAmount;
       
-      if (!apiToken || apiToken.length < 10) {
-        throw new Error('Token da API AbacatePay não configurado');
-      }
-
-      const url = 'https://api.abacatepay.com/v1/pixQrCode/create';
-      const amountInCents = Math.round(totalAmount * 100); // Converter para centavos
-      
-      const options = {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount: amountInCents,
-          expiresIn: 300, // 5 minutos
+      const { data, error } = await supabase.functions.invoke('generate-pix', {
+        body: {
+          amount: amountInReais,
           description: `Rifa: ${raffle.title} - Números: ${selectedNumbers.map(sel => sel.number).join(', ')}`,
           customer: {
             name: user?.name || 'Cliente',
@@ -269,31 +252,27 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
           },
           metadata: {
             externalId: `rifa_${raffle.id}_${Date.now()}`
-          }
-        })
-      };
+          },
+          raffleId: raffle.id,
+          selectedNumbers: selectedNumbers.map(sel => sel.number),
+          userEmail: user?.email || ''
+        }
+      });
 
-      const response = await fetch(url, options);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao gerar PIX');
       }
       
-      const data = await response.json();
+      setPixData(data.pixData);
+      setCurrentStep('pix');
       
-      if (data.data && data.data.brCode && data.data.brCodeBase64) {
-        // Salvar tickets como pendentes no banco
-        await saveTicketsToPending(data.data.id);
-        
-        setPixData(data.data);
-        setCurrentStep('pix');
-        
-        // Iniciar polling para verificar pagamento
-        startPaymentPolling(data.data.id);
-      } else {
-        throw new Error('Resposta inválida da API');
-      }
+      // Iniciar polling para verificar pagamento
+      startPaymentPolling(data.pixData.id);
+      
     } catch (error) {
       console.error('Erro ao gerar PIX:', error);      
       toast.error(getErrorMessage(error));
@@ -313,37 +292,6 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
       return 'Erro de conexão. Verifique sua internet e tente novamente.';
     }
     return 'Erro ao gerar PIX QR Code. Tente novamente.';
-  };
-
-  const saveTicketsToPending = async (paymentId: string) => {
-    try {
-      const ticketNumbers = selectedNumbers.map(sel => parseInt(sel.number));
-      
-      // Create tickets with reserved status and pending payment
-      const ticketsToInsert = ticketNumbers.map(number => ({
-        raffle_id: raffle.id,
-        number,
-        buyer_name: user?.name || 'Cliente',
-        buyer_email: user?.email || '',
-        buyer_phone: user?.phone || '',
-        status: 'reserved',
-        payment_status: 'pending',
-        payment_id: paymentId,
-        purchase_date: new Date().toISOString()
-      }));
-
-      const { error } = await supabase
-        .from('tickets')
-        .insert(ticketsToInsert);
-
-      if (error) {
-        console.error('Erro ao salvar tickets reservados:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Erro ao salvar tickets:', error);
-      throw error;
-    }
   };
 
   const startPaymentPolling = (pixId: string) => {
