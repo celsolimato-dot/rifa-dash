@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { RealRaffleService } from "@/services/realRaffleService";
 import { useRealAuth } from "@/contexts/RealAuthContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RaffleFormData {
   title: string;
@@ -98,6 +99,7 @@ export default function NewRaffle() {
   });
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const maxImages = 4;
   
@@ -111,16 +113,64 @@ export default function NewRaffle() {
     }));
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('raffle-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('Erro ao fazer upload da imagem');
+        return null;
+      }
+
+      const { data } = supabase.storage
+        .from('raffle-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Erro ao fazer upload da imagem');
+      return null;
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     const remainingSlots = maxImages - selectedImages.length;
     const filesToAdd = files.slice(0, remainingSlots);
     
-    setSelectedImages(prev => [...prev, ...filesToAdd]);
+    if (filesToAdd.length === 0) return;
+
+    setUploadingImage(true);
     
-    // Convert files to URLs for display
-    const newImageUrls = filesToAdd.map(file => URL.createObjectURL(file));
-    handleInputChange("images", [...formData.images, ...newImageUrls]);
+    try {
+      const uploadedUrls: string[] = [];
+      
+      for (const file of filesToAdd) {
+        const url = await uploadImageToStorage(file);
+        if (url) {
+          uploadedUrls.push(url);
+        }
+      }
+      
+      if (uploadedUrls.length > 0) {
+        setSelectedImages(prev => [...prev, ...filesToAdd]);
+        handleInputChange("images", [...formData.images, ...uploadedUrls]);
+        toast.success(`${uploadedUrls.length} imagem(ns) adicionada(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Error handling image upload:', error);
+      toast.error('Erro ao processar as imagens');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const triggerFileInput = () => {
@@ -257,10 +307,10 @@ export default function NewRaffle() {
           <Button 
             onClick={handleSubmit} 
             className="flex items-center space-x-2"
-            disabled={isSubmitting}
+            disabled={isSubmitting || uploadingImage}
           >
             <Save className="h-4 w-4" />
-            <span>{isSubmitting ? "Salvando..." : "Salvar Rifa"}</span>
+            <span>{isSubmitting ? "Salvando..." : uploadingImage ? "Aguarde o upload das imagens..." : "Salvar Rifa"}</span>
           </Button>
         </div>
       </div>
@@ -500,7 +550,7 @@ export default function NewRaffle() {
                   type="button" 
                   variant="outline" 
                   onClick={triggerFileInput}
-                  disabled={selectedImages.length >= maxImages}
+                  disabled={selectedImages.length >= maxImages || uploadingImage}
                   className="flex items-center space-x-2 h-20 border-dashed"
                 >
                   <div className="flex flex-col items-center space-y-2">
@@ -509,9 +559,11 @@ export default function NewRaffle() {
                       <Upload className="h-5 w-5" />
                     </div>
                     <span>
-                      {selectedImages.length >= maxImages 
-                        ? `Máximo de ${maxImages} imagens atingido`
-                        : `Clique para adicionar imagens (${selectedImages.length}/${maxImages})`
+                      {uploadingImage 
+                        ? "Enviando imagens..." 
+                        : selectedImages.length >= maxImages 
+                          ? `Máximo de ${maxImages} imagens atingido`
+                          : `Clique para adicionar imagens (${selectedImages.length}/${maxImages})`
                       }
                     </span>
                   </div>
