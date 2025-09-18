@@ -13,6 +13,8 @@ export interface AuthUser {
   cpf?: string;
 }
 
+export type UserRole = 'admin' | 'client';
+
 interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;

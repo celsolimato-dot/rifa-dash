@@ -18,7 +18,7 @@ import {
   AlertCircle,
   CheckCircle
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRealAuth as useAuth } from "@/contexts/RealAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCPF as validateCPFUtil, formatCPF as formatCPFUtil, validatePhone as validatePhoneUtil, formatPhone as formatPhoneUtil } from "@/utils/cpfValidator";
 
