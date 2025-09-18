@@ -312,10 +312,13 @@ export type Database = {
           payment_id: string | null
           payment_method: string | null
           payment_status: string | null
+          pix_id: string | null
           purchase_date: string | null
           raffle_id: string
+          reserved_until: string | null
           status: string
           updated_at: string | null
+          user_email: string | null
         }
         Insert: {
           buyer_email?: string | null
@@ -327,10 +330,13 @@ export type Database = {
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          pix_id?: string | null
           purchase_date?: string | null
           raffle_id: string
+          reserved_until?: string | null
           status?: string
           updated_at?: string | null
+          user_email?: string | null
         }
         Update: {
           buyer_email?: string | null
@@ -342,10 +348,13 @@ export type Database = {
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          pix_id?: string | null
           purchase_date?: string | null
           raffle_id?: string
+          reserved_until?: string | null
           status?: string
           updated_at?: string | null
+          user_email?: string | null
         }
         Relationships: [
           {

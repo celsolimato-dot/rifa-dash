@@ -17,6 +17,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const abacatePayToken = Deno.env.get('ABACATEPAY_TOKEN');
 
+    console.log('Environment check:', {
+      hasToken: !!abacatePayToken,
+      tokenLength: abacatePayToken?.length || 0
+    });
+
     if (!abacatePayToken) {
       throw new Error('Token da API AbacatePay não configurado no servidor');
     }
