@@ -45,6 +45,8 @@ export default function Sorteador() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   useEffect(() => {
     loadRaffles();
@@ -60,6 +62,49 @@ export default function Sorteador() {
       setRaffles([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadParticipants = async (raffleId: string) => {
+    try {
+      setLoadingParticipants(true);
+      const { data: tickets, error } = await supabase
+        .from('tickets')
+        .select('number, buyer_name, buyer_email, buyer_phone, purchase_date')
+        .eq('raffle_id', raffleId)
+        .eq('status', 'sold')
+        .order('number', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar participantes:', error);
+        setParticipants([]);
+        return;
+      }
+
+      // Group tickets by buyer to show participants
+      const participantsMap = new Map();
+      tickets?.forEach(ticket => {
+        const key = ticket.buyer_email;
+        if (participantsMap.has(key)) {
+          participantsMap.get(key).ticketNumbers.push(ticket.number.toString());
+        } else {
+          participantsMap.set(key, {
+            id: ticket.buyer_email,
+            name: ticket.buyer_name,
+            email: ticket.buyer_email,
+            phone: ticket.buyer_phone,
+            purchaseDate: ticket.purchase_date,
+            ticketNumbers: [ticket.number.toString()]
+          });
+        }
+      });
+
+      setParticipants(Array.from(participantsMap.values()));
+    } catch (error) {
+      console.error('Erro ao carregar participantes:', error);
+      setParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
     }
   };
 
@@ -206,7 +251,10 @@ export default function Sorteador() {
                   className={`cursor-pointer transition-all ${
                     selectedRaffle?.id === raffle.id ? 'ring-2 ring-primary' : 'hover:shadow-md'
                   }`}
-                  onClick={() => setSelectedRaffle(raffle)}
+                  onClick={() => {
+                    setSelectedRaffle(raffle);
+                    loadParticipants(raffle.id);
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="space-y-3">
@@ -259,7 +307,7 @@ export default function Sorteador() {
                    </div>
                    <div>
                      <p className="text-sm font-medium text-foreground-muted">Participantes</p>
-                     <p className="text-lg font-bold">{selectedRaffle.sold_tickets}</p>
+                     <p className="text-lg font-bold">{participants.length}</p>
                    </div>
                    <div>
                      <p className="text-sm font-medium text-foreground-muted">Valor</p>
@@ -375,11 +423,35 @@ export default function Sorteador() {
 
                   {/* Participants List */}
                   <div>
-                    <h4 className="font-medium mb-3">Participantes ({selectedRaffle.sold_tickets || 0})</h4>
+                    <h4 className="font-medium mb-3">Participantes ({participants.length})</h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      <div className="text-sm text-muted-foreground p-4 text-center border rounded-lg">
-                        Funcionalidade temporariamente indisponível - dados sendo migrados para sistema real
-                      </div>
+                      {loadingParticipants ? (
+                        <div className="text-sm text-muted-foreground p-4 text-center border rounded-lg">
+                          Carregando participantes...
+                        </div>
+                      ) : participants.length === 0 ? (
+                        <div className="text-sm text-muted-foreground p-4 text-center border rounded-lg">
+                          Nenhum participante encontrado
+                        </div>
+                      ) : (
+                        participants.map((participant, index) => (
+                          <div key={participant.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                            <div>
+                              <p className="font-medium text-sm">{participant.name}</p>
+                              <p className="text-xs text-muted-foreground">{participant.email}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">
+                                {participant.ticketNumbers.length} bilhete(s)
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Nºs: {participant.ticketNumbers.slice(0, 3).join(', ')}
+                                {participant.ticketNumbers.length > 3 && '...'}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
