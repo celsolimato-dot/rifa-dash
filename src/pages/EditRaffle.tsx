@@ -109,7 +109,11 @@ export default function EditRaffle() {
             drawDate: new Date(raffle.draw_date),
             status: raffle.status,
             category: raffle.category,
-            images: raffle.image_url ? [raffle.image_url] : [],
+            images: [
+              (raffle as any).image_url,
+              (raffle as any).image_url_2,
+              (raffle as any).image_url_3
+            ].filter(Boolean), // Remove valores null/undefined
             rules: "",
             autoNumbers: true,
             allowMultiplePurchases: true,
@@ -120,7 +124,11 @@ export default function EditRaffle() {
               logo: raffle.institution_logo || ""
             }
           });
-          setSelectedImages(raffle.image_url ? [raffle.image_url] : []);
+          setSelectedImages([
+            (raffle as any).image_url,
+            (raffle as any).image_url_2,
+            (raffle as any).image_url_3
+          ].filter(Boolean)); // Remove valores null/undefined
         } else {
           toast.error('Rifa não encontrada');
           navigate('/admin/rifas');
@@ -176,12 +184,28 @@ export default function EditRaffle() {
       const validUrls = uploadedUrls.filter(Boolean) as string[];
       
       if (validUrls.length > 0) {
-        setSelectedImages(prev => [...prev, ...validUrls]);
+        // Verificar se o total de imagens não excederá 3
+        const currentImageCount = formData.images.length;
+        const maxNewImages = Math.max(0, 3 - currentImageCount);
+        
+        if (maxNewImages === 0) {
+          toast.warning("Máximo de 3 imagens por produto. Remova uma imagem existente antes de adicionar uma nova.");
+          return;
+        }
+        
+        const imagesToAdd = validUrls.slice(0, maxNewImages);
+        
+        setSelectedImages(prev => [...prev, ...imagesToAdd]);
         setFormData(prev => ({
           ...prev,
-          images: [...prev.images, ...validUrls]
+          images: [...prev.images, ...imagesToAdd]
         }));
-        toast.success(`${validUrls.length} imagem(ns) adicionada(s) com sucesso!`);
+        
+        if (imagesToAdd.length < validUrls.length) {
+          toast.warning(`Apenas ${imagesToAdd.length} imagem(ns) adicionada(s). Limite máximo de 3 imagens por produto.`);
+        } else {
+          toast.success(`${imagesToAdd.length} imagem(ns) adicionada(s) com sucesso!`);
+        }
       }
     } catch (error) {
       console.error('Error uploading images:', error);

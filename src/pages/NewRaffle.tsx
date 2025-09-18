@@ -101,7 +101,7 @@ export default function NewRaffle() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const maxImages = 4;
+  const maxImages = 3;
   
   const [institutionLogo, setInstitutionLogo] = useState<File | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
