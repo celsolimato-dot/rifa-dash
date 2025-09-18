@@ -55,7 +55,6 @@ export class RealClientHistoryService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
-        .eq('payment_status', 'paid')
         .order('purchase_date', { ascending: false });
 
       if (error) {
@@ -118,7 +117,6 @@ export class RealClientHistoryService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
-        .eq('payment_status', 'paid')
         .order('purchase_date', { ascending: false });
 
       if (error) {
@@ -172,8 +170,7 @@ export class RealClientHistoryService {
           )
         `)
         .eq('buyer_email', userEmail)
-        .eq('status', 'sold')
-        .eq('payment_status', 'paid');
+        .eq('status', 'sold');
 
       if (error) {
         console.error('❌ Erro ao buscar estatísticas:', error);

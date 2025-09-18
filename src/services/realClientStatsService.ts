@@ -30,7 +30,7 @@ export class RealClientStatsService {
     try {
       console.log('🔄 Buscando estatísticas do cliente para:', userEmail);
       
-      // Buscar bilhetes pagos do usuário
+      // Buscar bilhetes vendidos do usuário
       const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
         .select(`
@@ -50,8 +50,7 @@ export class RealClientStatsService {
           )
         `)
         .eq('buyer_email', userEmail)
-        .eq('status', 'sold')
-        .eq('payment_status', 'paid');
+        .eq('status', 'sold');
 
       if (ticketsError) {
         console.error('❌ Erro ao buscar bilhetes:', ticketsError);
@@ -118,7 +117,6 @@ export class RealClientStatsService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
-        .eq('payment_status', 'paid')
         .order('purchase_date', { ascending: false })
         .limit(limit);
 
@@ -162,7 +160,6 @@ export class RealClientStatsService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
-        .eq('payment_status', 'paid')
         .eq('raffles.status', 'active');
 
       if (error) {
