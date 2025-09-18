@@ -14,10 +14,12 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const abacatePayToken = Deno.env.get('ABACATEPAY_TOKEN');
 
     console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
       hasToken: !!abacatePayToken,
       tokenLength: abacatePayToken?.length || 0
     });
@@ -26,7 +28,11 @@ serve(async (req) => {
       throw new Error('Token da API AbacatePay não configurado no servidor');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (!supabaseServiceKey) {
+      throw new Error('Chave de serviço do Supabase não configurada');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { 
       amount, 
@@ -38,6 +44,35 @@ serve(async (req) => {
       userEmail 
     } = await req.json();
 
+    console.log('Dados recebidos:', {
+      amount,
+      description,
+      customer,
+      metadata,
+      raffleId,
+      selectedNumbersCount: selectedNumbers?.length,
+      userEmail
+    });
+
+    // Preparar dados para AbacatePay conforme modelo fornecido
+    const pixPayload = {
+      amount: Math.round(amount * 100), // Converter para centavos
+      expiresIn: 300, // 5 minutos
+      description,
+      customer: {
+        name: customer.name,
+        cellphone: customer.phone || customer.cellphone,
+        email: customer.email,
+        taxId: customer.cpf || customer.taxId
+      },
+      metadata: {
+        externalId: metadata?.externalId || `raffle_${raffleId}`,
+        ...metadata
+      }
+    };
+
+    console.log('Payload para AbacatePay:', JSON.stringify(pixPayload, null, 2));
+
     // Criar o PIX QR Code via AbacatePay
     const pixResponse = await fetch('https://api.abacatepay.com/v1/pixQrCode/create', {
       method: 'POST',
@@ -45,51 +80,77 @@ serve(async (req) => {
         'Authorization': `Bearer ${abacatePayToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        amount: Math.round(amount * 100), // Converter para centavos
-        expiresIn: 300, // 5 minutos
-        description,
-        customer,
-        metadata
-      })
+      body: JSON.stringify(pixPayload)
     });
 
+    console.log('Resposta da AbacatePay - Status:', pixResponse.status);
+    
     if (!pixResponse.ok) {
-      const errorData = await pixResponse.json().catch(() => ({}));
-      throw new Error(errorData.message || `Erro da API: ${pixResponse.status}`);
+      const errorText = await pixResponse.text();
+      console.error('Erro da API AbacatePay:', errorText);
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.error?.message || errorData.message || `Erro da API AbacatePay: ${pixResponse.status}`);
+      } catch (parseError) {
+        throw new Error(`Erro da API AbacatePay (${pixResponse.status}): ${errorText}`);
+      }
     }
 
     const pixData = await pixResponse.json();
+    console.log('Dados do PIX recebidos:', JSON.stringify(pixData, null, 2));
 
     if (pixData.data && pixData.data.brCode && pixData.data.brCodeBase64) {
-      // Salvar os tickets como pendentes no banco
+      console.log('PIX QR Code gerado com sucesso. ID:', pixData.data.id);
+      
+      // Salvar os tickets como reservados no banco
       const ticketsToInsert = selectedNumbers.map((number: string) => ({
         raffle_id: raffleId,
-        number: number,
+        number: parseInt(number),
         user_email: userEmail,
+        buyer_email: userEmail,
+        buyer_name: customer.name,
+        buyer_phone: customer.phone || customer.cellphone,
         status: 'reserved',
         payment_status: 'pending',
         pix_id: pixData.data.id,
         reserved_until: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutos
       }));
 
-      const { error: insertError } = await supabase
+      console.log('Inserindo tickets:', {
+        count: ticketsToInsert.length,
+        raffleId,
+        pixId: pixData.data.id,
+        userEmail
+      });
+
+      const { data: insertedTickets, error: insertError } = await supabase
         .from('tickets')
-        .insert(ticketsToInsert);
+        .insert(ticketsToInsert)
+        .select();
 
       if (insertError) {
-        console.error('Erro ao salvar tickets:', insertError);
-        throw new Error('Erro ao reservar números');
+        console.error('Erro ao salvar tickets:', {
+          error: insertError,
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details
+        });
+        throw new Error(`Erro ao reservar números: ${insertError.message}`);
       }
+
+      console.log('Tickets inseridos com sucesso:', insertedTickets?.length || 0);
 
       return new Response(JSON.stringify({
         success: true,
-        pixData: pixData.data
+        pixData: pixData.data,
+        ticketsReserved: insertedTickets?.length || 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      throw new Error('Resposta inválida da API AbacatePay');
+      console.error('Resposta inválida da AbacatePay:', pixData);
+      throw new Error('Resposta inválida da API AbacatePay - dados do PIX não encontrados');
     }
 
   } catch (error) {
