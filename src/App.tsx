@@ -30,6 +30,7 @@ import Settings from "./pages/Settings";
 import TestimonialsManagement from "./pages/TestimonialsManagement";
 import NextDrawManagement from "./pages/NextDrawManagement";
 import NextDrawCardManagement from "./pages/NextDrawCardManagement";
+import AffiliateManagement from "./pages/AffiliateManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const AppContent = () => {
                 <Route path="mensagens" element={<Messages />} />
                 <Route path="configuracoes" element={<Settings />} />
                 <Route path="depoimentos" element={<TestimonialsManagement />} />
+                <Route path="afiliados" element={<AffiliateManagement />} />
                 <Route path="proximo-sorteio" element={<NextDrawManagement />} />
                 <Route path="card-sorteio" element={<NextDrawCardManagement />} />
                 <Route path="rifas/nova" element={<NewRaffle />} />

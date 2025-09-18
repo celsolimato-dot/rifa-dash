@@ -13,7 +13,8 @@ import {
   ChevronDown,
   List,
   Star,
-  CreditCard
+  CreditCard,
+  UserCheck
 } from "lucide-react";
 
 import {
@@ -44,6 +45,7 @@ const managementItems = [
   { title: "Nova Rifa", url: "/admin/rifas/nova", icon: PlusCircle },
   { title: "Card Sorteio", url: "/admin/card-sorteio", icon: CreditCard },
   { title: "Depoimentos", url: "/admin/depoimentos", icon: Star },
+  { title: "Afiliados", url: "/admin/afiliados", icon: UserCheck },
   { title: "Mensagens", url: "/admin/mensagens", icon: MessageCircle },
   { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
 ];
