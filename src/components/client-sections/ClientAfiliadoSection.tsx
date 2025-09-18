@@ -74,14 +74,12 @@ const ClientAfiliadoSection = () => {
         }
       }
 
-      // Buscar taxa de comissão
-      const { data: settings } = await supabase
-        .from('affiliate_settings')
-        .select('commission_percentage')
-        .maybeSingle();
+      // Buscar taxa de comissão usando a função
+      const { data: settingsData } = await supabase
+        .rpc('get_affiliate_settings');
 
-      if (settings) {
-        setCommissionRate(settings.commission_percentage);
+      if (settingsData && settingsData.length > 0) {
+        setCommissionRate(settingsData[0].commission_percentage);
       }
 
     } catch (error) {
