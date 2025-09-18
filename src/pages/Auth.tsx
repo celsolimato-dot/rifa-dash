@@ -111,12 +111,6 @@ const Auth = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   
-                  {/* Demo Credentials */}
-                  <div className="p-3 bg-background-secondary rounded-lg border border-border text-xs space-y-1">
-                    <p className="text-foreground font-medium">Credenciais de demonstração:</p>
-                    <p className="text-primary">Admin: admin@rifou.net.br / admin123</p>
-                    <p className="text-accent-success">Cliente: cliente@teste.com / cliente123</p>
-                  </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
