@@ -276,6 +276,8 @@ export default function EditRaffle() {
         status: formData.status,
         category: formData.category,
         image_url: formData.images[0] || null,
+        image_url_2: formData.images[1] || null,
+        image_url_3: formData.images[2] || null,
         institution_name: formData.institution.name || null,
         institution_logo: formData.institution.logo || null,
       };

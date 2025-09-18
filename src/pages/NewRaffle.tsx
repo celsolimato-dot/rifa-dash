@@ -269,6 +269,8 @@ export default function NewRaffle() {
         status: formData.status,
         category: formData.category || 'Outros',
         image_url: formData.images.length > 0 ? formData.images[0] : null,
+        image_url_2: formData.images.length > 1 ? formData.images[1] : null,
+        image_url_3: formData.images.length > 2 ? formData.images[2] : null,
         institution_name: formData.institution.name || null,
         institution_logo: formData.institution.logo || null,
         created_by: user.id
