@@ -28,6 +28,9 @@ Deno.serve(async (req) => {
           id: "pix_test_123456789",
           kind: "PIX",
           status: "PAID"
+        },
+        metadata: {
+          externalId: "rifa_test-raffle-id_1758214211000"
         }
       },
       devMode: false
