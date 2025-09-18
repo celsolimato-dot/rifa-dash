@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Users, Trophy, Eye, Timer, Calendar } from "lucide-react";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ImageCarousel } from "./ImageCarousel";
 import { NumberSelectionModal } from "./NumberSelectionModal";
 import { AuthModal } from "./AuthModal";
 import { RaffleDetailsModal } from "./RaffleDetailsModal";
@@ -136,66 +136,13 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
       featured ? 'ring-2 ring-accent-gold ring-opacity-50' : ''
     }`}>
       
-      {/* Enhanced Image Section with Carousel */}
+      {/* Enhanced Image Section with Custom Carousel */}
       <div className="relative group/image overflow-hidden">
-        <div className="aspect-[16/10] bg-background-secondary">
-          {image ? (
-            <Carousel className="w-full h-full">
-              <CarouselContent className="h-full">
-                {/* Primary Image */}
-                <CarouselItem className="h-full">
-                  <img 
-                    src={image} 
-                    alt={title}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                  <div className="hidden flex items-center justify-center w-full h-full bg-background-secondary">
-                    <Trophy className="w-16 h-16 text-foreground-muted animate-pulse" />
-                  </div>
-                </CarouselItem>
-                
-                {/* Additional Images - Demo variations */}
-                <CarouselItem className="h-full">
-                  <img 
-                    src={image}
-                    alt={`${title} - Vista 2`}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    style={{ filter: 'brightness(0.95) contrast(1.05)' }}
-                  />
-                </CarouselItem>
-                <CarouselItem className="h-full">
-                  <img 
-                    src={image}
-                    alt={`${title} - Vista 3`}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    style={{ filter: 'brightness(1.05) contrast(0.95)' }}
-                  />
-                </CarouselItem>
-              </CarouselContent>
-              
-              {/* Carousel Controls - Only show on hover */}
-              <div className="opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
-                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 text-white border-none hover:bg-black/90 w-8 h-8" />
-                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 text-white border-none hover:bg-black/90 w-8 h-8" />
-              </div>
-              
-              {/* Image Indicator Dots */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
-                <div className="w-2 h-2 rounded-full bg-white/80 shadow-sm"></div>
-                <div className="w-2 h-2 rounded-full bg-white/40"></div>
-                <div className="w-2 h-2 rounded-full bg-white/40"></div>
-              </div>
-            </Carousel>
-          ) : (
-            <div className="flex items-center justify-center w-full h-full">
-              <Trophy className="w-16 h-16 text-foreground-muted animate-pulse" />
-            </div>
-          )}
-        </div>
+        <ImageCarousel 
+          images={image ? [image] : []} 
+          title={title}
+          className="hover:scale-105 transition-transform duration-700"
+        />
         
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />

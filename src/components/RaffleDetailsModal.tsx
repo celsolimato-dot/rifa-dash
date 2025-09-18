@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
+import { ImageCarousel } from "./ImageCarousel";
 import { 
   Calendar, 
   Clock, 
@@ -18,8 +19,6 @@ import {
   Timer, 
   Building,
   Gift,
-  Star,
-  Shield,
   X
 } from "lucide-react";
 
@@ -73,169 +72,153 @@ export const RaffleDetailsModal: React.FC<RaffleDetailsModalProps> = ({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Imagem Principal */}
+          {/* Imagem Principal com Carousel */}
           <div className="space-y-4">
-            <div className="relative">
-              <img
-                src={raffle.image}
-                alt={raffle.title}
-                className="w-full h-64 object-cover rounded-lg"
-              />
+            <ImageCarousel 
+              images={raffle.image ? [raffle.image] : []} 
+              title={raffle.title}
+              className="rounded-lg shadow-lg"
+            />
+            
+            {/* Badges de Status */}
+            <div className="flex gap-2">
               {raffle.featured && (
-                <Badge className="absolute top-3 left-3 bg-gradient-gold text-primary-foreground">
+                <Badge className="bg-accent-gold text-black">
                   <Trophy className="w-3 h-3 mr-1" />
-                  Em Destaque
+                  Destaque
                 </Badge>
               )}
-              {raffle.timeLeft && (
-                <Badge className="absolute top-3 right-3 bg-background-secondary/80 backdrop-blur-sm text-foreground">
-                  <Timer className="w-3 h-3 mr-1" />
-                  {raffle.timeLeft}
-                </Badge>
-              )}
+              <Badge variant={raffle.status === 'active' ? 'default' : 'secondary'}>
+                {raffle.status === 'active' ? '🟢 Ativa' : '⏸️ Pausada'}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Informações da Rifa */}
+          <div className="space-y-6">
+            {/* Preço e Ticket Info */}
+            <Card className="bg-gradient-card border-border">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-accent-gold mb-2">
+                    R$ {raffle.price.toFixed(2).replace('.', ',')}
+                  </div>
+                  <p className="text-foreground-muted">por número</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progresso */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-foreground font-medium">Progresso da Rifa</span>
+                <span className="text-foreground font-bold">{progress.toFixed(0)}%</span>
+              </div>
+              <Progress value={progress} className="h-3" />
+              <div className="flex items-center justify-between text-sm text-foreground-muted">
+                <span className="flex items-center">
+                  <Users className="w-4 h-4 mr-1" />
+                  {raffle.soldTickets} vendidos
+                </span>
+                <span>{remainingTickets} restantes</span>
+              </div>
             </div>
 
-            {/* Informações da Instituição */}
-            {raffle.institution && (
-              <Card>
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-background-secondary border-border">
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-foreground">{raffle.totalTickets}</div>
+                  <div className="text-xs text-foreground-muted">Total de Números</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-background-secondary border-border">
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-accent-gold">
+                    R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-xs text-foreground-muted">Arrecadado</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Draw Date */}
+            <Card className="bg-background-secondary border-border">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-center text-foreground">
+                  <Calendar className="w-4 h-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    Sorteio: {new Date(raffle.drawDate).toLocaleDateString('pt-BR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Prize Info */}
+            {raffle.prizeValue && (
+              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
                 <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Building className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Instituição</p>
-                      <p className="text-sm text-foreground-muted">{raffle.institution}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Gift className="w-5 h-5 mr-2 text-primary" />
+                      <span className="font-medium text-foreground">Valor do Prêmio</span>
+                    </div>
+                    <div className="text-lg font-bold text-primary">
+                      R$ {raffle.prizeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-          </div>
 
-          {/* Detalhes da Rifa */}
-          <div className="space-y-4">
-            {/* Preço e Valor do Prêmio */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <DollarSign className="w-8 h-8 text-accent-gold mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-accent-gold">
-                    R$ {raffle.price.toFixed(2).replace('.', ',')}
-                  </p>
-                  <p className="text-sm text-foreground-muted">por número</p>
+            {/* Institution */}
+            {raffle.institution && (
+              <Card className="bg-background-secondary border-border">
+                <CardContent className="p-3">
+                  <div className="flex items-center text-foreground-muted">
+                    <Building className="w-4 h-4 mr-2" />
+                    <span className="text-sm">{raffle.institution}</span>
+                  </div>
                 </CardContent>
               </Card>
+            )}
 
-              {raffle.prizeValue && (
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Gift className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-primary">
-                      R$ {raffle.prizeValue.toLocaleString('pt-BR')}
-                    </p>
-                    <p className="text-sm text-foreground-muted">valor do prêmio</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Progresso da Rifa */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Progresso da Rifa</span>
-                    <span className="text-lg font-bold text-primary">{progress.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-3" />
-                  <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                    <div>
-                      <p className="font-bold text-accent-success">{raffle.soldTickets}</p>
-                      <p className="text-foreground-muted">Vendidos</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground-muted">{remainingTickets}</p>
-                      <p className="text-foreground-muted">Restantes</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground">{raffle.totalTickets}</p>
-                      <p className="text-foreground-muted">Total</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Informações do Sorteio */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Data do Sorteio</p>
-                      <p className="text-sm text-foreground-muted">{raffle.drawDate}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <DollarSign className="w-5 h-5 text-accent-gold" />
-                    <div>
-                      <p className="font-medium">Arrecadação Atual</p>
-                      <p className="text-sm text-foreground-muted">
-                        R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Shield className="w-5 h-5 text-accent-success" />
-                    <div>
-                      <p className="font-medium">Status</p>
-                      <Badge variant="success">{raffle.status || 'Ativa'}</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Botão Participar */}
-            <Button
+            {/* Action Button */}
+            <Button 
               onClick={onParticipate}
-              className="w-full h-12 text-lg font-semibold"
-              variant="hero"
+              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold py-3 text-lg rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-primary/25"
+              size="lg"
             >
-              <Trophy className="w-5 h-5 mr-2" />
-              Participar Agora
+              🎟️ Participar Agora
             </Button>
           </div>
         </div>
 
-        {/* Descrição e Regras */}
-        <div className="space-y-4 mt-6">
-          {raffle.description && (
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-2 flex items-center">
-                  <Star className="w-4 h-4 mr-2" />
-                  Descrição
-                </h3>
-                <p className="text-foreground-muted">{raffle.description}</p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Description */}
+        {raffle.description && (
+          <div className="mt-6 space-y-3">
+            <h3 className="text-lg font-semibold text-foreground">Descrição</h3>
+            <p className="text-foreground-muted leading-relaxed">{raffle.description}</p>
+          </div>
+        )}
 
-          {raffle.rules && (
-            <Card>
+        {/* Rules */}
+        {raffle.rules && (
+          <div className="mt-6 space-y-3">
+            <h3 className="text-lg font-semibold text-foreground">Regulamento</h3>
+            <Card className="bg-background-secondary border-border">
               <CardContent className="p-4">
-                <h3 className="font-semibold mb-2 flex items-center">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Regras e Termos
-                </h3>
-                <p className="text-foreground-muted whitespace-pre-line">{raffle.rules}</p>
+                <p className="text-sm text-foreground-muted leading-relaxed">{raffle.rules}</p>
               </CardContent>
             </Card>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
