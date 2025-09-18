@@ -7,7 +7,6 @@ import { ClientDashboardSection } from "@/components/client-sections/ClientDashb
 import { ClientRifasSection } from "@/components/client-sections/ClientRifasSection";
 import { ClientHistoricoSection } from "@/components/client-sections/ClientHistoricoSection";
 import { ClientPerfilSection } from "@/components/client-sections/ClientPerfilSection";
-import { ClientMensagensSection } from "@/components/client-sections/ClientMensagensSection";
 import { ClientSuporteSection } from "@/components/client-sections/ClientSuporteSection";
 import { 
   Breadcrumb,
@@ -40,8 +39,6 @@ const ClientDashboard = () => {
         return <ClientHistoricoSection />;
       case 'perfil':
         return <ClientPerfilSection />;
-      case 'mensagens':
-        return <ClientMensagensSection />;
       case 'suporte':
         return <ClientSuporteSection />;
       default:

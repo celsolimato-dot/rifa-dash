@@ -19,7 +19,6 @@ import {
 interface ClientSidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
-  unreadMessages?: number;
   openTickets?: number;
 }
 
@@ -34,7 +33,6 @@ interface MenuItem {
 export const ClientSidebar: React.FC<ClientSidebarProps> = ({ 
   activeSection, 
   onSectionChange, 
-  unreadMessages = 0,
   openTickets = 0 
 }) => {
   const { user, logout } = useAuth();
@@ -63,13 +61,6 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
       label: 'Meu Perfil',
       icon: <User className="w-5 h-5" />,
       description: 'Informações pessoais'
-    },
-    {
-      id: 'mensagens',
-      label: 'Mensagens',
-      icon: <MessageCircle className="w-5 h-5" />,
-      badge: unreadMessages,
-      description: 'Comunicações recebidas'
     },
     {
       id: 'suporte',

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientHistoryService, ClientTransaction, ClientPrize } from '@/services/clientHistoryService';
+import { RealClientHistoryService, RealClientTransaction, RealClientParticipation, ClientStats } from '@/services/realClientHistoryService';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Search,
@@ -20,14 +20,20 @@ import {
 
 export const ClientHistoricoSection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [transactions, setTransactions] = useState<ClientTransaction[]>([]);
-  const [participations, setParticipations] = useState<ClientTransaction[]>([]);
-  const [prizes, setPrizes] = useState<ClientPrize[]>([]);
+  const [transactions, setTransactions] = useState<RealClientTransaction[]>([]);
+  const [participations, setParticipations] = useState<RealClientParticipation[]>([]);
+  const [stats, setStats] = useState<ClientStats>({
+    totalInvested: 0,
+    totalWon: 0,
+    netBalance: 0,
+    totalParticipations: 0,
+    totalWins: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.email) {
       loadHistoryData();
     }
   }, [user]);
@@ -35,15 +41,15 @@ export const ClientHistoricoSection: React.FC = () => {
   const loadHistoryData = async () => {
     try {
       setIsLoading(true);
-      const [transactionsData, participationsData, prizesData] = await Promise.all([
-        ClientHistoryService.getClientTransactions(user!.id),
-        ClientHistoryService.getClientTransactions(user!.id), // Reuse for now
-        ClientHistoryService.getClientPrizes(user!.id)
+      const [transactionsData, participationsData, statsData] = await Promise.all([
+        RealClientHistoryService.getClientTransactions(user!.email),
+        RealClientHistoryService.getClientParticipations(user!.email),
+        RealClientHistoryService.getClientStats(user!.email)
       ]);
       
       setTransactions(transactionsData);
       setParticipations(participationsData);
-      setPrizes(prizesData);
+      setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar dados do histórico:', error);
     } finally {
@@ -53,13 +59,13 @@ export const ClientHistoricoSection: React.FC = () => {
 
 
 
-  const filteredTransactions = transactions.filter(transaction =>
+  const filteredTransactions = transactions?.filter(transaction =>
     transaction.raffleTitle.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
-  const filteredParticipations = participations.filter(participation =>
+  const filteredParticipations = participations?.filter(participation =>
     participation.raffleTitle.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -142,7 +148,7 @@ export const ClientHistoricoSection: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-foreground-muted">Números:</span>
                 <div className="flex space-x-1">
-                  {participation.numbers.map((number: number) => (
+                  {participation.numbers?.map((number: number) => (
                     <Badge 
                       key={number}
                       variant={
@@ -158,7 +164,7 @@ export const ClientHistoricoSection: React.FC = () => {
                     >
                       {number.toString().padStart(2, '0')}
                     </Badge>
-                  ))}
+                  )) || []}
                 </div>
               </div>
               
@@ -240,9 +246,14 @@ export const ClientHistoricoSection: React.FC = () => {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 240,00</div>
+            <div className="text-2xl font-bold text-foreground">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(stats.totalInvested)}
+            </div>
             <p className="text-xs text-foreground-muted">
-              Em {participations.length} participações
+              Em {stats.totalParticipations} participações
             </p>
           </CardContent>
         </Card>
@@ -255,9 +266,14 @@ export const ClientHistoricoSection: React.FC = () => {
             <Trophy className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 299,00</div>
+            <div className="text-2xl font-bold text-foreground">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(stats.totalWon)}
+            </div>
             <p className="text-xs text-foreground-muted">
-              1 prêmio conquistado
+              {stats.totalWins} prêmio{stats.totalWins !== 1 ? 's' : ''} conquistado{stats.totalWins !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
@@ -270,9 +286,15 @@ export const ClientHistoricoSection: React.FC = () => {
             <ArrowUpRight className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+R$ 59,00</div>
+            <div className={`text-2xl font-bold ${stats.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {stats.netBalance >= 0 ? '+' : ''}
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(stats.netBalance)}
+            </div>
             <p className="text-xs text-foreground-muted">
-              Lucro total até agora
+              {stats.netBalance >= 0 ? 'Lucro' : 'Prejuízo'} total até agora
             </p>
           </CardContent>
         </Card>
