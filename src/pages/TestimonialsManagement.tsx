@@ -46,7 +46,7 @@ export default function TestimonialsManagement() {
       content: "",
       rating: 5,
       type: "general",
-      status: "pending",
+      status: "approved", // Mudança: auto-aprovação para depoimentos criados pelo admin
       winning_number: "",
     });
     setIsDialogOpen(true);

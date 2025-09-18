@@ -30,7 +30,7 @@ export const TestimonialsProvider: React.FC<{ children: ReactNode }> = ({ childr
   const loadTestimonials = async () => {
     try {
       setIsLoading(true);
-      const data = await testimonialService.getAllTestimonials();
+      const data = await testimonialService.getApprovedTestimonials(); // Mudança: buscar apenas depoimentos aprovados
       setTestimonials(data);
     } catch (error) {
       console.error('Erro ao carregar depoimentos:', error);
