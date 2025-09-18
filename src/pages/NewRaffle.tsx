@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RealRaffleService } from "@/services/realRaffleService";
-import { useRealAuth } from "@/contexts/RealAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -74,7 +74,7 @@ const statusOptions = [
 
 export default function NewRaffle() {
   const navigate = useNavigate();
-  const { user } = useRealAuth();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<RaffleFormData>({
     title: "",
