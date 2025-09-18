@@ -221,6 +221,51 @@ export type Database = {
         }
         Relationships: []
       }
+      settings: {
+        Row: {
+          contact_city: string
+          contact_cnpj: string | null
+          contact_email: string
+          contact_phone: string
+          created_at: string
+          currency: string
+          id: string
+          language: string
+          site_description: string | null
+          site_name: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          contact_city?: string
+          contact_cnpj?: string | null
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          language?: string
+          site_description?: string | null
+          site_name?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_city?: string
+          contact_cnpj?: string | null
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          language?: string
+          site_description?: string | null
+          site_name?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           created_at: string

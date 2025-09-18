@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Settings as SettingsIcon, 
   User, 
@@ -144,6 +145,7 @@ export default function Settings() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showBackupDialog, setShowBackupDialog] = useState(false);
+  const { toast } = useToast();
 
   // Sincronizar configurações globais com as configurações locais
   useEffect(() => {
@@ -155,10 +157,23 @@ export default function Settings() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    // Show success message
+    try {
+      await updateGlobalSettings(settings.general);
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações foram salvas com sucesso!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleBackup = () => {
@@ -181,10 +196,8 @@ export default function Settings() {
       }
     }));
 
-    // Se for uma configuração geral, atualizar também o contexto global
-    if (section === 'general') {
-      updateGlobalSettings({ [field]: value });
-    }
+    // Note: Para configurações gerais, elas serão salvas quando o usuário clicar em "Salvar"
+    // Não salvamos automaticamente a cada mudança para evitar muitas requisições
   };
 
   return (
