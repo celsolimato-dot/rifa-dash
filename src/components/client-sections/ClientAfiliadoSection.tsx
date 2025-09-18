@@ -50,7 +50,7 @@ const ClientAfiliadoSection = () => {
         .from('affiliates')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (affiliateError && affiliateError.code !== 'PGRST116') {
         console.error('Error fetching affiliate data:', affiliateError);
@@ -78,7 +78,7 @@ const ClientAfiliadoSection = () => {
       const { data: settings } = await supabase
         .from('affiliate_settings')
         .select('commission_percentage')
-        .single();
+        .maybeSingle();
 
       if (settings) {
         setCommissionRate(settings.commission_percentage);
