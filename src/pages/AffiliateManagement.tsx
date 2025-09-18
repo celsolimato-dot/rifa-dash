@@ -100,10 +100,13 @@ const AffiliateManagement = () => {
 
   const fetchSettings = async () => {
     try {
+      // Buscar o registro mais recente
       const { data, error } = await supabase
         .from('affiliate_settings')
         .select('*')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data && !error) {
         setSettings({
@@ -132,9 +135,16 @@ const AffiliateManagement = () => {
         return;
       }
 
+      // Primeiro, limpar todos os registros existentes
+      await supabase
+        .from('affiliate_settings')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000');
+
+      // Inserir novo registro
       const { error } = await supabase
         .from('affiliate_settings')
-        .upsert({
+        .insert({
           commission_percentage: commissionValue,
           min_payout: minPayoutValue
         });
@@ -153,8 +163,8 @@ const AffiliateManagement = () => {
         description: "Configurações atualizadas com sucesso.",
       });
 
-      // Recarregar afiliados para atualizar dados
-      fetchAffiliates();
+      // Recarregar configurações para garantir que estão atualizadas
+      await fetchSettings();
     } catch (error) {
       console.error('Error updating settings:', error);
       toast({
