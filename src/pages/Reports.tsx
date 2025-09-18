@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RaffleService } from "../services/raffleService";
+import { useReportsData } from "@/hooks/useReportsData";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -47,110 +47,23 @@ interface RevenueMetrics {
 }
 
 export default function Reports() {
-  // Estados para dados reais
-  const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [topRaffles, setTopRaffles] = useState<TopRaffle[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [revenueDistribution, setRevenueDistribution] = useState<any[]>([]);
-  const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics>({
-    total: 0,
-    thisMonth: 0,
-    lastMonth: 0,
-    growth: 0
-  });
-  const [ticketsMetrics, setTicketsMetrics] = useState({
-    total: 0,
-    growth: 0
-  });
-  const [participantsMetrics, setParticipantsMetrics] = useState({
-    total: 0,
-    growth: 0
-  });
-  const [conversionRate, setConversionRate] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, refetch } = useReportsData();
   const [selectedPeriod, setSelectedPeriod] = useState("6months");
   const [selectedMetric, setSelectedMetric] = useState("revenue");
 
-  // Função para carregar dados reais
-  const loadReportsData = async () => {
-    setIsLoading(true);
-    try {
-      // Carregar todas as métricas em paralelo
-      const [
-        revenueData,
-        salesResponse,
-        topRafflesData,
-        ticketsData,
-        participantsData,
-        conversionData,
-        activityData,
-        distributionData
-      ] = await Promise.all([
-        RaffleService.getRevenueMetrics(),
-        RaffleService.getSalesData(),
-        RaffleService.getTopRaffles(),
-        RaffleService.getTicketsMetrics(),
-        RaffleService.getParticipantsMetrics(),
-        RaffleService.getConversionRate(),
-        RaffleService.getRecentActivity(),
-        RaffleService.getRevenueDistribution()
-      ]);
-
-      // Atualizar métricas de receita
-      if (!revenueData.error && 'total' in revenueData) {
-        setRevenueMetrics({
-          total: revenueData.total,
-          thisMonth: revenueData.thisMonth,
-          lastMonth: revenueData.lastMonth,
-          growth: revenueData.growth
-        });
-      }
-
-      // Atualizar dados de vendas
-      if (!salesResponse.error && 'data' in salesResponse) {
-        setSalesData(salesResponse.data || []);
-      }
-
-      // Atualizar top rifas
-      setTopRaffles(topRafflesData);
-
-      // Atualizar métricas de bilhetes
-      if (!ticketsData.error && 'total' in ticketsData) {
-        setTicketsMetrics({
-          total: ticketsData.total,
-          growth: ticketsData.growth
-        });
-      }
-
-      // Atualizar métricas de participantes
-      if (!participantsData.error && 'total' in participantsData) {
-        setParticipantsMetrics({
-          total: participantsData.total,
-          growth: participantsData.growth
-        });
-      }
-
-      // Atualizar taxa de conversão
-      if (!conversionData.error && 'conversionRate' in conversionData) {
-        setConversionRate(conversionData.conversionRate);
-      }
-
-      // Atualizar atividades recentes
-      setRecentActivity(activityData);
-
-      // Atualizar distribuição de receita
-      setRevenueDistribution(distributionData);
-
-    } catch (error) {
-      console.error('Erro ao carregar dados dos relatórios:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadReportsData();
-  }, []);
+  // Destructure data for easier access
+  const {
+    revenueMetrics,
+    salesData,
+    topRaffles,
+    ticketsMetrics,
+    participantsMetrics,
+    conversionRate,
+    recentActivity,
+    revenueDistribution,
+    isLoading,
+    error
+  } = data;
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -179,11 +92,27 @@ export default function Reports() {
     }).format(value);
   };
 
-  const SimpleBarChart = ({ data, metric }: { data: SalesData[], metric: string }) => {
+  const SimpleBarChart = ({ data, metric }: { data: any[], metric: string }) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-foreground-muted">Nenhum dado disponível</p>
+        </div>
+      );
+    }
+
     const maxValue = Math.max(...data.map(d => 
       metric === 'revenue' ? d.revenue : 
       metric === 'tickets' ? d.tickets : d.raffles
     ));
+
+    if (maxValue === 0) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-foreground-muted">Nenhum dado para exibir</p>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-4">
@@ -250,12 +179,21 @@ export default function Reports() {
               <SelectItem value="1year">1 ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={refetch}>
             <Download className="w-4 h-4 mr-2" />
-            Exportar
+            Atualizar Dados
           </Button>
         </div>
       </div>
+
+      {/* Debug Info - temporário */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <p className="text-red-600 font-medium">Erro: {error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -279,6 +217,7 @@ export default function Reports() {
                         {revenueMetrics.growth >= 0 ? '+' : ''}{revenueMetrics.growth.toFixed(1)}%
                       </span>
                     </div>
+                    {/* Debug: {JSON.stringify(revenueMetrics)} */}
                   </>
                 )}
               </div>
@@ -307,6 +246,7 @@ export default function Reports() {
                         {ticketsMetrics.growth >= 0 ? '+' : ''}{ticketsMetrics.growth.toFixed(1)}%
                       </span>
                     </div>
+                    {/* Debug: {JSON.stringify(ticketsMetrics)} */}
                   </>
                 )}
               </div>
@@ -357,6 +297,7 @@ export default function Reports() {
                       <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
                       <span className="text-sm text-green-600">Estável</span>
                     </div>
+                    {/* Debug: Taxa = {conversionRate} */}
                   </>
                 )}
               </div>

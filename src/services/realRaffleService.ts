@@ -329,13 +329,34 @@ export class RealRaffleService {
       
       if (error) throw error;
       
+      // Buscar número de participantes únicos para cada rifa
+      const raffleIds = raffles?.map(r => r.id) || [];
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('tickets')
+        .select('raffle_id, buyer_email')
+        .in('raffle_id', raffleIds)
+        .eq('status', 'sold');
+      
+      if (participantsError) {
+        console.error('Error getting participants data:', participantsError);
+      }
+      
+      // Contar participantes únicos por rifa
+      const participantsByRaffle = new Map();
+      participantsData?.forEach(ticket => {
+        if (!participantsByRaffle.has(ticket.raffle_id)) {
+          participantsByRaffle.set(ticket.raffle_id, new Set());
+        }
+        participantsByRaffle.get(ticket.raffle_id).add(ticket.buyer_email);
+      });
+      
       return raffles?.map(raffle => ({
         id: raffle.id,
         title: raffle.title,
         revenue: raffle.revenue || 0,
         ticketsSold: raffle.sold_tickets || 0,
         totalTickets: raffle.total_tickets || 0,
-        participants: raffle.sold_tickets || 0, // Simplificado, idealmente seria o número de participantes únicos
+        participants: participantsByRaffle.get(raffle.id)?.size || 0,
         status: raffle.status
       })) || [];
     } catch (error) {
@@ -374,6 +395,7 @@ export class RealRaffleService {
             action: "Nova rifa criada",
             item: raffle.title,
             time: this.getTimeAgo(raffle.created_at),
+            date: raffle.created_at,
             type: "create"
           });
         } else if (raffle.status === 'completed') {
@@ -381,6 +403,7 @@ export class RealRaffleService {
             action: "Sorteio realizado",
             item: raffle.title,
             time: this.getTimeAgo(raffle.updated_at || raffle.created_at),
+            date: raffle.updated_at || raffle.created_at,
             type: "draw"
           });
         }
@@ -392,13 +415,14 @@ export class RealRaffleService {
           action: "Novo participante",
           item: ticket.buyer_name || "Participante",
           time: this.getTimeAgo(ticket.created_at),
+          date: ticket.created_at,
           type: "user"
         });
       });
       
       // Ordenar por data mais recente e limitar
       return activities
-        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 10);
         
     } catch (error) {
