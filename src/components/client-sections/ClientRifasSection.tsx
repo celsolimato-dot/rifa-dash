@@ -109,19 +109,19 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {raffle.numbers.map((number: number) => (
+            {(raffle.userTickets || []).map((number: string) => (
               <Badge 
                 key={number} 
                 variant={
-                  !isActive && raffle.winnerNumber === number ? "default" : "outline"
+                  !isActive && raffle.winnerNumber === parseInt(number) ? "default" : "outline"
                 }
                 className={
-                  !isActive && raffle.winnerNumber === number 
+                  !isActive && raffle.winnerNumber === parseInt(number) 
                     ? "bg-green-500 text-white" 
                     : ""
                 }
               >
-                {number.toString().padStart(2, '0')}
+                {parseInt(number).toString().padStart(2, '0')}
               </Badge>
             ))}
           </div>
