@@ -75,10 +75,32 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
 
   const ticketService = new RealTicketService();
 
-  // Carregar tickets existentes quando modal abrir
+  // Carregar tickets existentes quando modal abrir e configurar realtime
   useEffect(() => {
     if (isOpen) {
       loadExistingTickets();
+      
+      // Configurar subscription para updates em tempo real
+      const channel = supabase
+        .channel('tickets-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tickets',
+            filter: `raffle_id=eq.${raffle.id}`
+          },
+          (payload) => {
+            console.log('Ticket atualizado:', payload);
+            loadExistingTickets(); // Recarregar tickets quando houver mudanças
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isOpen, raffle.id]);
 
@@ -88,7 +110,11 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
       const sold = tickets
         .filter(t => t.status === 'sold' && t.payment_status === 'paid')
         .map(t => t.number.toString().padStart(3, '0'));
+      const reserved = tickets
+        .filter(t => t.status === 'reserved' && t.payment_status === 'pending')
+        .map(t => t.number.toString().padStart(3, '0'));
       setSoldNumbers(sold);
+      setReservedNumbers(reserved);
     } catch (error) {
       console.error('Erro ao carregar tickets:', error);
     }
@@ -289,22 +315,26 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
     try {
       const ticketNumbers = selectedNumbers.map(sel => parseInt(sel.number));
       
-      await ticketService.purchaseTickets(raffle.id, ticketNumbers, {
-        name: user?.name || 'Cliente',
-        email: user?.email || '',
-        phone: user?.phone || ''
-      });
+      // Create tickets with reserved status and pending payment
+      const ticketsToInsert = ticketNumbers.map(number => ({
+        raffle_id: raffle.id,
+        number,
+        buyer_name: user?.name || 'Cliente',
+        buyer_email: user?.email || '',
+        buyer_phone: user?.phone || '',
+        status: 'reserved',
+        payment_status: 'pending',
+        payment_id: paymentId,
+        purchase_date: new Date().toISOString()
+      }));
 
-      // Atualizar tickets para incluir payment_id
       const { error } = await supabase
         .from('tickets')
-        .update({ payment_id: paymentId })
-        .eq('raffle_id', raffle.id)
-        .eq('buyer_email', user?.email)
-        .eq('payment_status', 'pending');
+        .insert(ticketsToInsert);
 
       if (error) {
-        console.error('Erro ao atualizar payment_id:', error);
+        console.error('Erro ao salvar tickets reservados:', error);
+        throw error;
       }
     } catch (error) {
       console.error('Erro ao salvar tickets:', error);
@@ -355,7 +385,10 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
           setPaymentPolling(null);
         }
         
-        toast.success('Pagamento confirmado! Seus números foram reservados.');
+        toast.success('🎉 Seu número da sorte está garantido!', {
+          duration: 5000,
+          description: `Números: ${selectedNumbers.map(sel => sel.number).join(', ')}`
+        });
         
         // Atualizar números vendidos
         await loadExistingTickets();

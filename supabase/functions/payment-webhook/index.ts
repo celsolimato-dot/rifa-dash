@@ -89,10 +89,11 @@ Deno.serve(async (req) => {
         return new Response('No pending tickets found', { status: 404, headers: corsHeaders });
       }
 
-      // Atualizar status dos tickets para pagos
+      // Atualizar status dos tickets para vendido e pago
       const { error: updateError } = await supabase
         .from('tickets')
         .update({
+          status: 'sold',
           payment_status: 'paid',
           payment_method: 'pix',
           payment_id: webhookData.id,
