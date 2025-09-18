@@ -93,7 +93,39 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
           },
           (payload) => {
             console.log('Ticket atualizado:', payload);
-            loadExistingTickets(); // Recarregar tickets quando houver mudanças
+            
+            // Recarregar tickets quando houver mudanças
+            loadExistingTickets();
+            
+            // Verificar se é um pagamento confirmado para o usuário atual
+            if (payload.eventType === 'UPDATE' && 
+                payload.new.payment_status === 'paid' && 
+                payload.new.user_email === user?.email &&
+                currentStep === 'pix') {
+              
+              const updatedNumber = payload.new.number.toString().padStart(3, '0');
+              const wasSelected = selectedNumbers.find(sel => sel.number === updatedNumber);
+              
+              if (wasSelected) {
+                console.log('Pagamento confirmado automaticamente via webhook!', updatedNumber);
+                
+                // Parar polling se existir
+                if (paymentPolling) {
+                  clearInterval(paymentPolling);
+                  setPaymentPolling(null);
+                }
+                
+                toast.success('🎉 Pagamento confirmado automaticamente!', {
+                  duration: 5000,
+                  description: `Número ${updatedNumber} garantido!`
+                });
+                
+                // Resetar modal após sucesso
+                setTimeout(() => {
+                  handlePaymentSuccess();
+                }, 2000);
+              }
+            }
           }
         )
         .subscribe();
@@ -102,7 +134,7 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
         supabase.removeChannel(channel);
       };
     }
-  }, [isOpen, raffle.id]);
+  }, [isOpen, raffle.id, user?.email, selectedNumbers, currentStep, paymentPolling]);
 
   const loadExistingTickets = async () => {
     try {

@@ -55,6 +55,7 @@ serve(async (req) => {
     });
 
     // Preparar dados para AbacatePay conforme modelo fornecido
+    const externalId = `rifa_${raffleId}_${Date.now()}`;
     const pixPayload = {
       amount: Math.round(amount * 100), // Converter para centavos
       expiresIn: 300, // 5 minutos
@@ -66,7 +67,9 @@ serve(async (req) => {
         taxId: customer.cpf || customer.taxId
       },
       metadata: {
-        externalId: metadata?.externalId || `raffle_${raffleId}`,
+        externalId: externalId,
+        raffleId: raffleId,
+        userEmail: userEmail,
         ...metadata
       }
     };

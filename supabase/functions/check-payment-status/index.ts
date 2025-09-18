@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
     const { pixId, userEmail, raffleId }: PaymentStatusRequest = await req.json();
@@ -35,24 +35,28 @@ Deno.serve(async (req) => {
 
     console.log('Verificando status do pagamento:', { pixId, userEmail, raffleId });
 
-    // Primeiro, verificar no banco se já temos tickets pagos
+    // Verificar no banco se já temos tickets pagos para este PIX
     const { data: paidTickets, error: ticketsError } = await supabase
       .from('tickets')
       .select('*')
-      .eq('raffle_id', raffleId)
-      .eq('buyer_email', userEmail)
-      .eq('payment_status', 'paid')
-      .eq('payment_id', pixId);
+      .eq('pix_id', pixId)
+      .eq('user_email', userEmail)
+      .eq('raffle_id', raffleId);
 
     if (ticketsError) {
       console.error('Erro ao verificar tickets:', ticketsError);
       return new Response('Error checking tickets', { status: 500, headers: corsHeaders });
     }
 
-    if (paidTickets && paidTickets.length > 0) {
+    console.log(`Encontrados ${paidTickets?.length || 0} tickets para PIX ${pixId}`);
+
+    // Se encontrou tickets pagos, retornar sucesso
+    const paidTicketsOnly = paidTickets?.filter(t => t.payment_status === 'paid') || [];
+    if (paidTicketsOnly.length > 0) {
+      console.log(`${paidTicketsOnly.length} tickets já pagos encontrados`);
       return new Response(JSON.stringify({
         status: 'paid',
-        tickets: paidTickets.map(t => t.number),
+        tickets: paidTicketsOnly.map(t => t.number),
         message: 'Pagamento confirmado!'
       }), {
         status: 200,
@@ -60,36 +64,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Se não encontrou no banco, consultar a API do AbacatePay
-    const abacatePayToken = Deno.env.get('ABACATEPAY_TOKEN');
-    if (!abacatePayToken) {
-      console.error('Token do AbacatePay não configurado');
-      return new Response('API configuration error', { status: 500, headers: corsHeaders });
+    // Se há tickets pendentes, aguardar o webhook
+    const pendingTickets = paidTickets?.filter(t => t.payment_status === 'pending') || [];
+    if (pendingTickets.length > 0) {
+      console.log(`${pendingTickets.length} tickets pendentes encontrados`);
+      return new Response(JSON.stringify({
+        status: 'pending',
+        tickets: pendingTickets.map(t => t.number),
+        message: 'Aguardando confirmação do pagamento...'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    const abacatePayResponse = await fetch(`https://api.abacatepay.com/v1/pixQrCode/${pixId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${abacatePayToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!abacatePayResponse.ok) {
-      console.error('Erro ao consultar AbacatePay:', abacatePayResponse.status);
-      return new Response('Error checking payment status', { status: 500, headers: corsHeaders });
-    }
-
-    const paymentData = await abacatePayResponse.json();
-    console.log('Status do AbacatePay:', paymentData.data?.status);
-
+    // Se não encontrou tickets, algo deu errado
+    console.log('Nenhum ticket encontrado para este PIX');
     return new Response(JSON.stringify({
-      status: paymentData.data?.status || 'pending',
-      message: paymentData.data?.status === 'paid' ? 
-        'Pagamento confirmado! Aguarde a atualização...' : 
-        'Aguardando pagamento...'
+      status: 'not_found',
+      message: 'Tickets não encontrados. Tente gerar um novo PIX.'
     }), {
-      status: 200,
+      status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
