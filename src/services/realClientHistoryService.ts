@@ -36,6 +36,8 @@ export class RealClientHistoryService {
   
   static async getClientTransactions(userEmail: string): Promise<RealClientTransaction[]> {
     try {
+      console.log('🔄 Buscando transações do cliente para:', userEmail);
+      
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
@@ -53,9 +55,15 @@ export class RealClientHistoryService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
+        .eq('payment_status', 'paid')
         .order('purchase_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar transações:', error);
+        throw error;
+      }
+
+      console.log('✅ Transações encontradas:', tickets?.length || 0);
 
       // Group tickets by raffle to create transactions
       const transactionMap = new Map<string, RealClientTransaction>();
@@ -70,7 +78,7 @@ export class RealClientHistoryService {
             ticketNumbers: [],
             amount: 0,
             date: ticket.purchase_date,
-            status: ticket.payment_status === 'approved' ? 'approved' : 'pending',
+            status: ticket.payment_status === 'paid' ? 'approved' : 'pending',
             type: 'compra',
             raffleId: raffleId
           });
@@ -83,13 +91,15 @@ export class RealClientHistoryService {
 
       return Array.from(transactionMap.values());
     } catch (error) {
-      console.error('Error getting client transactions:', error);
+      console.error('❌ Erro ao buscar transações do cliente:', error);
       return [];
     }
   }
 
   static async getClientParticipations(userEmail: string): Promise<RealClientParticipation[]> {
     try {
+      console.log('🔄 Buscando participações do cliente para:', userEmail);
+      
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
@@ -97,6 +107,7 @@ export class RealClientHistoryService {
           number,
           purchase_date,
           status,
+          payment_status,
           raffles!inner(
             id,
             title,
@@ -107,9 +118,15 @@ export class RealClientHistoryService {
         `)
         .eq('buyer_email', userEmail)
         .eq('status', 'sold')
+        .eq('payment_status', 'paid')
         .order('purchase_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar participações:', error);
+        throw error;
+      }
+
+      console.log('✅ Participações encontradas:', tickets?.length || 0);
 
       // Group tickets by raffle to create participations
       const participationMap = new Map<string, RealClientParticipation>();
@@ -137,13 +154,15 @@ export class RealClientHistoryService {
 
       return Array.from(participationMap.values());
     } catch (error) {
-      console.error('Error getting client participations:', error);
+      console.error('❌ Erro ao buscar participações do cliente:', error);
       return [];
     }
   }
 
   static async getClientStats(userEmail: string): Promise<ClientStats> {
     try {
+      console.log('🔄 Buscando estatísticas do cliente para:', userEmail);
+      
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
@@ -153,9 +172,15 @@ export class RealClientHistoryService {
           )
         `)
         .eq('buyer_email', userEmail)
-        .eq('status', 'sold');
+        .eq('status', 'sold')
+        .eq('payment_status', 'paid');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar estatísticas:', error);
+        throw error;
+      }
+
+      console.log('✅ Bilhetes para estatísticas encontrados:', tickets?.length || 0);
 
       let totalInvested = 0;
       let totalParticipations = 0;
@@ -170,6 +195,8 @@ export class RealClientHistoryService {
       const totalWins = 0;
       const netBalance = totalWon - totalInvested;
 
+      console.log('📊 Estatísticas calculadas:', { totalInvested, totalWon, netBalance, totalParticipations, totalWins });
+
       return {
         totalInvested,
         totalWon,
@@ -178,7 +205,7 @@ export class RealClientHistoryService {
         totalWins
       };
     } catch (error) {
-      console.error('Error getting client stats:', error);
+      console.error('❌ Erro ao buscar estatísticas do cliente:', error);
       return {
         totalInvested: 0,
         totalWon: 0,

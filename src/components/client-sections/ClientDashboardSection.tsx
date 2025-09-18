@@ -11,49 +11,51 @@ import {
   Clock,
   Target
 } from "lucide-react";
-import { ClientStatsService, ClientStats, RecentActivity, ActiveRaffle } from "@/services/clientStatsService";
+import { RealClientStatsService, RealClientStats, RealRecentActivity, RealActiveRaffle } from "@/services/realClientStatsService";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ClientDashboardSectionProps {
   onSectionChange?: (section: string) => void;
 }
 
-const clientStatsService = new ClientStatsService();
-
 export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ onSectionChange }) => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<ClientStats>({
+  const [stats, setStats] = useState<RealClientStats>({
     totalInvestido: 0,
     rifasAtivas: 0,
     premiosGanhos: 0,
     economiaTotal: 0
   });
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [activeRaffles, setActiveRaffles] = useState<ActiveRaffle[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RealRecentActivity[]>([]);
+  const [activeRaffles, setActiveRaffles] = useState<RealActiveRaffle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.email) {
       loadDashboardData();
     }
-  }, [user?.id]);
+  }, [user?.email]);
 
   const loadDashboardData = async () => {
-    if (!user?.id) return;
+    if (!user?.email) return;
     
     try {
       setIsLoading(true);
+      console.log('🔄 Carregando dados do dashboard do cliente...');
+      
       const [statsData, activityData, rafflesData] = await Promise.all([
-        clientStatsService.getClientStats(user.id),
-        clientStatsService.getRecentActivity(user.id, 3),
-        clientStatsService.getActiveRaffles(user.id)
+        RealClientStatsService.getClientStats(user.email),
+        RealClientStatsService.getRecentActivity(user.email, 3),
+        RealClientStatsService.getActiveRaffles(user.email)
       ]);
 
+      console.log('✅ Dados carregados:', { statsData, activityData, rafflesData });
+      
       setStats(statsData);
       setRecentActivity(activityData);
       setActiveRaffles(rafflesData);
     } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
+      console.error('❌ Erro ao carregar dados do dashboard:', error);
     } finally {
       setIsLoading(false);
     }
