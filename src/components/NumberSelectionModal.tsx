@@ -240,8 +240,6 @@ export const NumberSelectionModal: React.FC<NumberSelectionModalProps> = ({
     try {
       // Verificar se o token está configurado
       const apiToken = import.meta.env.VITE_ABACATEPAY_TOKEN;
-      console.log('Environment variables:', import.meta.env);
-      console.log('VITE_ABACATEPAY_TOKEN:', apiToken);
       
       if (!apiToken) {
         throw new Error('Token da API AbacatePay não configurado');
