@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { RealAuthProvider } from "@/contexts/RealAuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { TestimonialsProvider } from "@/contexts/TestimonialsContext";
 import { NextDrawProvider } from "@/contexts/NextDrawContext";
@@ -35,7 +35,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SettingsProvider>
-      <AuthProvider>
+      <RealAuthProvider>
         <TestimonialsProvider>
           <NextDrawProvider>
             <NextDrawCardProvider>
@@ -104,7 +104,7 @@ const App = () => (
             </NextDrawCardProvider>
           </NextDrawProvider>
         </TestimonialsProvider>
-      </AuthProvider>
+      </RealAuthProvider>
     </SettingsProvider>
   </QueryClientProvider>
 );
