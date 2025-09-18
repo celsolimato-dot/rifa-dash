@@ -56,18 +56,10 @@ const AffiliateManagement = () => {
     try {
       setLoading(true);
       
-      // Buscar afiliados com dados do usuário
+      // Buscar afiliados
       const { data: affiliatesData, error: affiliatesError } = await supabase
         .from('affiliates')
-        .select(`
-          *,
-          referrals (
-            id,
-            commission_earned,
-            status,
-            referred_user_id
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (affiliatesError) {
