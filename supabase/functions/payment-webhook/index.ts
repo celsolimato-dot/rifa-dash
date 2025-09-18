@@ -8,19 +8,28 @@ const corsHeaders = {
 interface AbacatePayWebhook {
   event: string;
   data: {
-    id: string;
-    status: 'pending' | 'paid' | 'expired' | 'cancelled';
-    amount: number;
-    metadata: {
+    payment: {
+      amount: number;
+      fee: number;
+      method: string;
+    };
+    pixQrCode: {
+      amount: number;
+      id: string;
+      kind: string;
+      status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+    };
+    metadata?: {
       externalId: string;
     };
-    customer: {
+    customer?: {
       name: string;
       email: string;
       cellphone: string;
       taxId: string;
     };
   };
+  devMode: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +52,7 @@ Deno.serve(async (req) => {
     console.log('Webhook recebido:', webhook);
 
     // Verificar se é um evento de pagamento
-    if (webhook.event !== 'pix.paid' && webhook.event !== 'pix.expired') {
+    if (webhook.event !== 'billing.paid') {
       console.log('Evento ignorado:', webhook.event);
       return new Response('OK', { status: 200, headers: corsHeaders });
     }
@@ -64,15 +73,14 @@ Deno.serve(async (req) => {
       return new Response('Invalid external ID', { status: 400, headers: corsHeaders });
     }
 
-    console.log(`Processando pagamento para rifa ${raffleId}, status: ${webhookData.status}`);
+    console.log(`Processando pagamento para rifa ${raffleId}, status: ${webhookData.pixQrCode?.status}`);
 
-    if (webhook.event === 'pix.paid' && webhookData.status === 'paid') {
+    if (webhook.event === 'billing.paid' && webhookData.pixQrCode?.status === 'PAID') {
       // Pagamento confirmado - atualizar tickets pendentes
       const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
         .select('*')
         .eq('raffle_id', raffleId)
-        .eq('buyer_email', webhookData.customer.email)
         .eq('payment_status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -82,10 +90,7 @@ Deno.serve(async (req) => {
       }
 
       if (!tickets || tickets.length === 0) {
-        console.log('Nenhum ticket pendente encontrado para:', {
-          raffleId,
-          email: webhookData.customer.email
-        });
+        console.log('Nenhum ticket pendente encontrado para rifa:', raffleId);
         return new Response('No pending tickets found', { status: 404, headers: corsHeaders });
       }
 
@@ -96,35 +101,21 @@ Deno.serve(async (req) => {
           status: 'sold',
           payment_status: 'paid',
           payment_method: 'pix',
-          payment_id: webhookData.id,
+          payment_id: webhookData.pixQrCode?.id,
           updated_at: new Date().toISOString()
         })
         .eq('raffle_id', raffleId)
-        .eq('buyer_email', webhookData.customer.email)
-        .eq('payment_status', 'pending');
+        .eq('payment_id', webhookData.pixQrCode?.id);
 
       if (updateError) {
         console.error('Erro ao atualizar tickets:', updateError);
         return new Response('Error updating tickets', { status: 500, headers: corsHeaders });
       }
 
-      console.log(`Tickets atualizados com sucesso para pagamento ${webhookData.id}`);
+      console.log(`Tickets atualizados com sucesso para pagamento ${webhookData.pixQrCode?.id}`);
 
-    } else if (webhook.event === 'pix.expired' || webhookData.status === 'expired') {
-      // PIX expirado - remover tickets pendentes
-      const { error: deleteError } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('raffle_id', raffleId)
-        .eq('buyer_email', webhookData.customer.email)
-        .eq('payment_status', 'pending');
-
-      if (deleteError) {
-        console.error('Erro ao remover tickets expirados:', deleteError);
-        return new Response('Error removing expired tickets', { status: 500, headers: corsHeaders });
-      }
-
-      console.log(`Tickets expirados removidos para rifa ${raffleId}`);
+    } else {
+      console.log(`Evento ${webhook.event} não processado ou status inválido`);
     }
 
     return new Response('OK', { status: 200, headers: corsHeaders });
