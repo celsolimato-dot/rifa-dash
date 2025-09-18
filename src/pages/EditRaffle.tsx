@@ -1,34 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Upload, X, ArrowLeft, Save, Building2 } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { 
-  CalendarIcon, 
-  Upload, 
-  Plus, 
-  X, 
-  Save, 
-  ArrowLeft,
-  Trophy,
-  DollarSign,
-  Users,
-  Clock,
-  Camera,
-  Image as ImageIcon,
-  Building
-} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RealRaffleService, type Raffle } from "@/services/realRaffleService";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RaffleFormData {
   title: string;
@@ -56,8 +44,8 @@ const categories = [
   "Eletrônicos",
   "Veículos", 
   "Casa e Decoração",
+  "Viagem",
   "Dinheiro",
-  "Viagens",
   "Outros"
 ];
 
@@ -65,33 +53,8 @@ const statusOptions = [
   { value: "draft", label: "Rascunho", color: "bg-gray-500" },
   { value: "active", label: "Ativa", color: "bg-green-500" },
   { value: "paused", label: "Pausada", color: "bg-yellow-500" },
-  { value: "finished", label: "Finalizada", color: "bg-blue-500" }
+  { value: "completed", label: "Finalizada", color: "bg-blue-500" },
 ];
-
-// Mock data para simular carregamento da rifa
-const mockRaffleData = {
-  "1": {
-    title: "iPhone 15 Pro Max 256GB",
-    description: "iPhone 15 Pro Max 256GB Titânio Natural, novo na caixa com garantia Apple.",
-    prize: "iPhone 15 Pro Max 256GB",
-    prizeValue: "8999.00",
-    ticketPrice: "25.00",
-    totalTickets: "500",
-    drawDate: new Date("2024-12-25"),
-    status: "active",
-    category: "Eletrônicos",
-    images: ["/placeholder.svg", "/placeholder.svg"],
-    rules: "Sorteio será realizado ao vivo no Instagram. Ganhador tem 48h para entrar em contato.",
-    autoNumbers: true,
-    allowMultiplePurchases: true,
-    maxTicketsPerPerson: "10",
-    minTicketsToStart: "100",
-    institution: {
-      name: "Instituto Beneficente ABC",
-      logo: "/placeholder.svg"
-    }
-  }
-};
 
 export default function EditRaffle() {
   const navigate = useNavigate();
@@ -120,64 +83,142 @@ export default function EditRaffle() {
     }
   });
 
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const maxImages = 4;
-  
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [institutionLogo, setInstitutionLogo] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // Carregar dados da rifa
   useEffect(() => {
-    const loadRaffleData = () => {
-      if (id && mockRaffleData[id as keyof typeof mockRaffleData]) {
-        const raffleData = mockRaffleData[id as keyof typeof mockRaffleData];
-        setFormData(raffleData);
-      } else {
-        // Se não encontrar a rifa, redireciona para 404 ou lista
-        navigate("/admin/rifas");
+    async function loadRaffle() {
+      if (!id) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    };
 
-    loadRaffleData();
+      try {
+        const raffle = await RealRaffleService.getRaffleById(id);
+        if (raffle) {
+          setFormData({
+            title: raffle.title,
+            description: raffle.description || "",
+            prize: raffle.prize,
+            prizeValue: raffle.prize_value.toString(),
+            ticketPrice: raffle.ticket_price.toString(),
+            totalTickets: raffle.total_tickets.toString(),
+            drawDate: new Date(raffle.draw_date),
+            status: raffle.status,
+            category: raffle.category,
+            images: raffle.image_url ? [raffle.image_url] : [],
+            rules: "",
+            autoNumbers: true,
+            allowMultiplePurchases: true,
+            maxTicketsPerPerson: "",
+            minTicketsToStart: "",
+            institution: {
+              name: raffle.institution_name || "",
+              logo: raffle.institution_logo || ""
+            }
+          });
+          setSelectedImages(raffle.image_url ? [raffle.image_url] : []);
+        } else {
+          toast.error('Rifa não encontrada');
+          navigate('/admin/rifas');
+        }
+      } catch (error) {
+        console.error('Error loading raffle:', error);
+        toast.error('Erro ao carregar dados da rifa');
+        navigate('/admin/rifas');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRaffle();
   }, [id, navigate]);
 
-  const handleInputChange = (field: keyof RaffleFormData, value: any) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const remainingSlots = maxImages - selectedImages.length;
-    const filesToAdd = files.slice(0, remainingSlots);
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `raffle-images/${Date.now()}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from('raffle-images')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('raffle-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setUploadingImage(true);
     
-    setSelectedImages(prev => [...prev, ...filesToAdd]);
-    
-    // Convert files to URLs for display
-    const newImageUrls = filesToAdd.map(file => URL.createObjectURL(file));
-    handleInputChange("images", [...formData.images, ...newImageUrls]);
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadImageToStorage(file));
+      const uploadedUrls = await Promise.all(uploadPromises);
+      const validUrls = uploadedUrls.filter(Boolean) as string[];
+      
+      if (validUrls.length > 0) {
+        setSelectedImages(prev => [...prev, ...validUrls]);
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...validUrls]
+        }));
+        toast.success(`${validUrls.length} imagem(ns) adicionada(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Erro ao fazer upload das imagens');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setInstitutionLogo(file);
-      const logoUrl = URL.createObjectURL(file);
-      setFormData(prev => ({
-        ...prev,
-        institution: {
-          ...prev.institution,
-          logo: logoUrl
-        }
-      }));
+    if (!file) return;
+
+    setUploadingImage(true);
+    
+    try {
+      const uploadedUrl = await uploadImageToStorage(file);
+      if (uploadedUrl) {
+        setInstitutionLogo(file);
+        setFormData(prev => ({
+          ...prev,
+          institution: {
+            ...prev.institution,
+            logo: uploadedUrl
+          }
+        }));
+        toast.success("Logo da instituição adicionado com sucesso!");
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast.error('Erro ao fazer upload do logo');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -186,9 +227,6 @@ export default function EditRaffle() {
   };
 
   const removeInstitutionLogo = () => {
-    if (formData.institution.logo) {
-      URL.revokeObjectURL(formData.institution.logo);
-    }
     setInstitutionLogo(null);
     setFormData(prev => ({
       ...prev,
@@ -200,44 +238,68 @@ export default function EditRaffle() {
   };
 
   const removeImage = (index: number) => {
-    const newImages = formData.images.filter((_, i) => i !== index);
-    const newSelectedImages = selectedImages.filter((_, i) => i !== index);
-    
-    // Revoke object URL to prevent memory leaks
-    if (formData.images[index]) {
-      URL.revokeObjectURL(formData.images[index]);
-    }
-    
-    handleInputChange("images", newImages);
-    setSelectedImages(newSelectedImages);
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações básicas
+    // Validação básica
     if (!formData.title || !formData.prize || !formData.ticketPrice || !formData.totalTickets) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
-    // Simular salvamento
-    console.log("Dados da rifa editada:", formData);
-    alert("Rifa atualizada com sucesso!");
-    navigate("/admin/rifas");
+    if (!id) {
+      toast.error("ID da rifa não encontrado.");
+      return;
+    }
+
+    if (!formData.drawDate) {
+      toast.error("Por favor, selecione a data do sorteio.");
+      return;
+    }
+
+    try {
+      const raffleData = {
+        title: formData.title,
+        description: formData.description,
+        prize: formData.prize,
+        prize_value: parseFloat(formData.prizeValue) || 0,
+        ticket_price: parseFloat(formData.ticketPrice),
+        total_tickets: parseInt(formData.totalTickets),
+        draw_date: formData.drawDate.toISOString(),
+        status: formData.status,
+        category: formData.category,
+        image_url: formData.images[0] || null,
+        institution_name: formData.institution.name || null,
+        institution_logo: formData.institution.logo || null,
+      };
+
+      await RealRaffleService.updateRaffle(id, raffleData);
+      toast.success("Rifa atualizada com sucesso!");
+      navigate("/admin/rifas");
+    } catch (error) {
+      console.error('Error updating raffle:', error);
+      toast.error('Erro ao atualizar rifa');
+    }
   };
 
   const calculateRevenue = () => {
     const price = parseFloat(formData.ticketPrice) || 0;
-    const tickets = parseInt(formData.totalTickets) || 0;
-    return price * tickets;
+    const total = parseInt(formData.totalTickets) || 0;
+    return price * total;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-foreground-muted">Carregando dados da rifa...</p>
         </div>
       </div>
@@ -245,510 +307,386 @@ export default function EditRaffle() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/admin/rifas")}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Voltar</span>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Editar Rifa</h1>
-            <p className="text-foreground-muted">Edite os detalhes da rifa</p>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/admin/rifas")}
+              className="text-foreground-muted hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar para Rifas
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Editar Rifa</h1>
+              <p className="text-foreground-muted">Modifique os detalhes da sua rifa</p>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => navigate("/admin/rifas")}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} className="flex items-center space-x-2">
-            <Save className="h-4 w-4" />
-            <span>Salvar Alterações</span>
+          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
+            <Save className="w-4 h-4 mr-2" />
+            Salvar Alterações
           </Button>
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Coluna Principal */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Informações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5" />
-                <span>Informações Básicas</span>
-              </CardTitle>
-              <CardDescription>
-                Defina as informações principais da rifa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Título da Rifa *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Ex: iPhone 15 Pro Max"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Descreva os detalhes do prêmio..."
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="prize">Prêmio *</Label>
-                  <Input
-                    id="prize"
-                    placeholder="Ex: iPhone 15 Pro Max 256GB"
-                    value={formData.prize}
-                    onChange={(e) => handleInputChange("prize", e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="prizeValue">Valor do Prêmio (R$)</Label>
-                  <Input
-                    id="prizeValue"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={formData.prizeValue}
-                    onChange={(e) => handleInputChange("prizeValue", e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Configurações da Rifa */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5" />
-                <span>Configurações da Rifa</span>
-              </CardTitle>
-              <CardDescription>
-                Configure preços, números e regras
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ticketPrice">Preço do Bilhete (R$) *</Label>
-                  <Input
-                    id="ticketPrice"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={formData.ticketPrice}
-                    onChange={(e) => handleInputChange("ticketPrice", e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="totalTickets">Total de Números *</Label>
-                  <Input
-                    id="totalTickets"
-                    type="number"
-                    placeholder="Ex: 1000"
-                    value={formData.totalTickets}
-                    onChange={(e) => handleInputChange("totalTickets", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="drawDate">Data do Sorteio</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.drawDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.drawDate ? (
-                          format(formData.drawDate, "PPP", { locale: ptBR })
-                        ) : (
-                          <span>Selecione uma data</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.drawDate}
-                        onSelect={(date) => handleInputChange("drawDate", date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maxTicketsPerPerson">Máx. Bilhetes por Pessoa</Label>
-                  <Input
-                    id="maxTicketsPerPerson"
-                    type="number"
-                    placeholder="Ex: 10 (deixe vazio para ilimitado)"
-                    value={formData.maxTicketsPerPerson}
-                    onChange={(e) => handleInputChange("maxTicketsPerPerson", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="minTicketsToStart">Mín. para Iniciar Sorteio</Label>
-                  <Input
-                    id="minTicketsToStart"
-                    type="number"
-                    placeholder="Ex: 100"
-                    value={formData.minTicketsToStart}
-                    onChange={(e) => handleInputChange("minTicketsToStart", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Numeração Automática</Label>
-                    <p className="text-sm text-foreground-muted">
-                      Gerar números automaticamente para os participantes
-                    </p>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Coluna Principal */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Informações Básicas */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Informações Básicas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-foreground">Título da Rifa *</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      placeholder="Ex: iPhone 15 Pro Max"
+                      className="bg-background border-border text-foreground"
+                      required
+                    />
                   </div>
-                  <Switch
-                    checked={formData.autoNumbers}
-                    onCheckedChange={(checked) => handleInputChange("autoNumbers", checked)}
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-foreground">Categoria *</Label>
+                    <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                      <SelectTrigger className="bg-background border-border text-foreground">
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-foreground">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Descreva os detalhes da sua rifa..."
+                    rows={3}
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Permitir Múltiplas Compras</Label>
-                    <p className="text-sm text-foreground-muted">
-                      Permitir que uma pessoa compre vários bilhetes
-                    </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="prize" className="text-foreground">Prêmio *</Label>
+                    <Input
+                      id="prize"
+                      value={formData.prize}
+                      onChange={(e) => handleInputChange("prize", e.target.value)}
+                      placeholder="Ex: iPhone 15 Pro Max 256GB"
+                      className="bg-background border-border text-foreground"
+                      required
+                    />
                   </div>
-                  <Switch
-                    checked={formData.allowMultiplePurchases}
-                    onCheckedChange={(checked) => handleInputChange("allowMultiplePurchases", checked)}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="prizeValue" className="text-foreground">Valor do Prêmio (R$)</Label>
+                    <Input
+                      id="prizeValue"
+                      type="number"
+                      step="0.01"
+                      value={formData.prizeValue}
+                      onChange={(e) => handleInputChange("prizeValue", e.target.value)}
+                      placeholder="0.00"
+                      className="bg-background border-border text-foreground"
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Imagens */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ImageIcon className="h-5 w-5" />
-                <span>Imagens do Prêmio</span>
-              </CardTitle>
-              <CardDescription>
-                Adicione até {maxImages} imagens para tornar a rifa mais atrativa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              
-              <div className="flex flex-col space-y-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={triggerFileInput}
-                  disabled={selectedImages.length >= maxImages}
-                  className="flex items-center space-x-2 h-20 border-dashed"
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Camera className="h-5 w-5" />
-                      <Upload className="h-5 w-5" />
-                    </div>
-                    <span>
-                      {selectedImages.length >= maxImages 
-                        ? `Máximo de ${maxImages} imagens atingido`
-                        : `Clique para adicionar imagens (${selectedImages.length}/${maxImages})`
-                      }
-                    </span>
+            {/* Configurações da Rifa */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Configurações da Rifa</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ticketPrice" className="text-foreground">Preço do Bilhete (R$) *</Label>
+                    <Input
+                      id="ticketPrice"
+                      type="number"
+                      step="0.01"
+                      value={formData.ticketPrice}
+                      onChange={(e) => handleInputChange("ticketPrice", e.target.value)}
+                      placeholder="0.00"
+                      className="bg-background border-border text-foreground"
+                      required
+                    />
                   </div>
-                </Button>
-
-                {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {formData.images.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={image}
-                          alt={`Imagem ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg border"
-                        />
+                  <div className="space-y-2">
+                    <Label htmlFor="totalTickets" className="text-foreground">Total de Números *</Label>
+                    <Input
+                      id="totalTickets"
+                      type="number"
+                      value={formData.totalTickets}
+                      onChange={(e) => handleInputChange("totalTickets", e.target.value)}
+                      placeholder="1000"
+                      className="bg-background border-border text-foreground"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="drawDate" className="text-foreground">Data do Sorteio *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
                         <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(index)}
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal bg-background border-border text-foreground",
+                            !formData.drawDate && "text-foreground-muted"
+                          )}
                         >
-                          <X className="h-3 w-3" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.drawDate ? format(formData.drawDate, "dd/MM/yyyy") : "Selecionar data"}
                         </Button>
-                        <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                          {index + 1}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={formData.drawDate}
+                          onSelect={(date) => handleInputChange("drawDate", date)}
+                          initialFocus
+                          disabled={(date) => date < new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Imagens */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Imagens da Rifa</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-background-secondary rounded-lg overflow-hidden">
+                        <img 
+                          src={image} 
+                          alt={`Imagem ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden flex items-center justify-center w-full h-full bg-background-secondary">
+                          <p className="text-foreground-muted text-sm">Imagem não encontrada</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Instituição */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Building className="h-5 w-5" />
-                <span>Instituição (Opcional)</span>
-              </CardTitle>
-              <CardDescription>
-                Adicione informações da instituição responsável pela rifa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="institutionName">Nome da Instituição</Label>
-                <Input
-                  id="institutionName"
-                  placeholder="Ex: Instituto Beneficente ABC"
-                  value={formData.institution.name}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    institution: {
-                      ...prev.institution,
-                      name: e.target.value
-                    }
-                  }))}
-                />
-              </div>
-
-              {formData.institution.name && (
-                <div className="space-y-4">
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <Label>Logo da Instituição</Label>
-                    <p className="text-sm text-foreground-muted">
-                      Adicione o logo da instituição (opcional)
-                    </p>
-                  </div>
-
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 text-foreground-muted mx-auto mb-2" />
+                  <p className="text-foreground-muted mb-4">Adicione imagens da sua rifa</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={triggerFileInput}
+                    disabled={uploadingImage}
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploadingImage ? "Enviando..." : "Adicionar Imagens"}
+                  </Button>
                   <input
-                    ref={logoInputRef}
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleLogoUpload}
+                    multiple
+                    onChange={handleImageUpload}
                     className="hidden"
                   />
+                </div>
+              </CardContent>
+            </Card>
 
-                  <div className="flex flex-col space-y-4">
-                    {!formData.institution.logo ? (
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={triggerLogoInput}
-                        className="flex items-center space-x-2 h-20 border-dashed"
+            {/* Instituição */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  Informações da Instituição
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="institutionName" className="text-foreground">Nome da Instituição</Label>
+                  <Input
+                    id="institutionName"
+                    value={formData.institution.name}
+                    onChange={(e) => handleInputChange("institution", { ...formData.institution, name: e.target.value })}
+                    placeholder="Ex: Instituto Beneficente ABC"
+                    className="bg-background border-border text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-foreground">Logo da Instituição</Label>
+                  {formData.institution.logo ? (
+                    <div className="relative inline-block">
+                      <img 
+                        src={formData.institution.logo} 
+                        alt="Logo da instituição" 
+                        className="w-32 h-32 object-cover rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-32 h-32 bg-background-secondary rounded-lg flex items-center justify-center">
+                        <p className="text-foreground-muted text-sm">Logo não encontrada</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeInstitutionLogo}
                       >
-                        <div className="flex flex-col items-center space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-5 w-5" />
-                            <Upload className="h-5 w-5" />
-                          </div>
-                          <span>Clique para adicionar logo</span>
-                        </div>
+                        <X className="w-3 h-3" />
                       </Button>
-                    ) : (
-                      <div className="relative group w-32 h-32">
-                        <img
-                          src={formData.institution.logo}
-                          alt="Logo da instituição"
-                          className="w-full h-full object-contain rounded-lg border bg-white"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={removeInstitutionLogo}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      <Building2 className="w-8 h-8 text-foreground-muted mx-auto mb-2" />
+                      <p className="text-foreground-muted mb-4">Adicione o logo da instituição</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={triggerLogoInput}
+                        disabled={uploadingImage}
+                        className="w-full"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploadingImage ? "Enviando..." : "Selecionar Logo"}
+                      </Button>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Regras */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Regras e Termos</CardTitle>
-              <CardDescription>
-                Defina as regras específicas desta rifa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Digite as regras da rifa..."
-                value={formData.rules}
-                onChange={(e) => handleInputChange("rules", e.target.value)}
-                rows={4}
-              />
-            </CardContent>
-          </Card>
-        </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Status */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Status da Rifa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger className="bg-background border-border text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          
-          {/* Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status da Rifa</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${status.color}`} />
-                        <span>{status.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Resumo Financeiro */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5" />
-                <span>Resumo Financeiro</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            {/* Resumo Financeiro */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Resumo Financeiro</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-sm text-foreground-muted">Preço por bilhete:</span>
-                  <span className="font-medium">
-                    R$ {parseFloat(formData.ticketPrice || "0").toFixed(2)}
+                  <span className="text-foreground-muted">Receita Potencial:</span>
+                  <span className="font-semibold text-foreground">
+                    R$ {calculateRevenue().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-foreground-muted">Total de números:</span>
-                  <span className="font-medium">{formData.totalTickets || "0"}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Receita máxima:</span>
-                  <span className="font-bold text-green-600">
-                    R$ {calculateRevenue().toFixed(2)}
+                  <span className="text-foreground-muted">Preço por Bilhete:</span>
+                  <span className="font-semibold text-foreground">
+                    R$ {parseFloat(formData.ticketPrice || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex justify-between">
+                  <span className="text-foreground-muted">Total de Números:</span>
+                  <span className="font-semibold text-foreground">
+                    {parseInt(formData.totalTickets || "0").toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Estatísticas Rápidas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>Previsões</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center space-y-2">
-                <div className="text-2xl font-bold text-primary">
-                  {formData.totalTickets || "0"}
-                </div>
-                <p className="text-sm text-foreground-muted">Números disponíveis</p>
-              </div>
-              
-              {formData.drawDate && (
-                <div className="text-center space-y-2">
-                  <div className="text-lg font-semibold text-foreground">
-                    <Clock className="h-4 w-4 inline mr-1" />
-                    {format(formData.drawDate, "dd/MM/yyyy", { locale: ptBR })}
-                  </div>
-                  <p className="text-sm text-foreground-muted">Data do sorteio</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </form>
+            {/* Ações */}
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Ações</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  disabled={uploadingImage}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {uploadingImage ? "Processando..." : "Salvar Alterações"}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => navigate("/admin/rifas")}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Cancelar
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
