@@ -161,10 +161,9 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           )}
         </div>
         
-        {/* Timer Badge */}
-        <Badge className="absolute top-3 right-3 z-10 bg-red-500/90 text-white shadow-lg animate-fade-in">
-          <Timer className="w-3 h-3 mr-1" />
-          {timeLeft || '2 dias'}
+        {/* Status Badge */}
+        <Badge className="absolute top-3 right-3 z-10 bg-green-500/90 text-white shadow-lg animate-fade-in">
+          Rifa Ativa
         </Badge>
       </div>
       
