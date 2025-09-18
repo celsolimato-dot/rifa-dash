@@ -94,7 +94,7 @@ const messageService = new MessageService();
 
 export default function Messages() {
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState("messages");
+  const [selectedTab, setSelectedTab] = useState("tickets");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNewMessage, setShowNewMessage] = useState(false);
@@ -509,8 +509,6 @@ export default function Messages() {
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList>
-          <TabsTrigger value="messages">Mensagens</TabsTrigger>
-          <TabsTrigger value="contacts">Contatos</TabsTrigger>
           <TabsTrigger value="tickets">
             Tickets de Suporte
             {supportTickets.filter(t => t.status === "open" || t.status === "in_progress").length > 0 && (
@@ -519,145 +517,67 @@ export default function Messages() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="contacts">Contatos</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="messages" className="space-y-6">
-          {/* Filters */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
-                    <Input
-                      placeholder="Buscar mensagens..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Status</SelectItem>
-                    <SelectItem value="sent">Enviadas</SelectItem>
-                    <SelectItem value="draft">Rascunhos</SelectItem>
-                    <SelectItem value="scheduled">Agendadas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Messages List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Lista de Mensagens ({filteredMessages.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredMessages.map((message) => (
-                  <div key={message.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-medium">{message.subject}</h3>
-                        {getStatusBadge(message.status)}
-                      </div>
-                      <p className="text-sm text-foreground-muted mb-2">
-                        {message.content.substring(0, 100)}...
-                      </p>
-                      <div className="flex items-center space-x-4 text-xs text-foreground-muted">
-                        <span className="flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {message.sentAt ? 
-                            new Date(message.sentAt).toLocaleDateString('pt-BR') :
-                            message.scheduledFor ?
-                            `Agendada para ${new Date(message.scheduledFor).toLocaleDateString('pt-BR')}` :
-                            `Criada em ${new Date(message.createdAt).toLocaleDateString('pt-BR')}`
-                          }
-                        </span>
-                        {message.openRate && (
-                          <span className="flex items-center">
-                            <Eye className="w-3 h-3 mr-1" />
-                            {message.openRate}% abertura
-                          </span>
-                        )}
-                        {message.clickRate && (
-                          <span className="flex items-center">
-                            <MessageSquare className="w-3 h-3 mr-1" />
-                            {message.clickRate}% clique
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Lista de Contatos</CardTitle>
+              <CardTitle>Lista de Contatos Atendidos via Tickets</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {Array.from(new Map(
+                  supportTickets.map(ticket => [
+                    ticket.user_email, 
+                    {
+                      id: ticket.user_id,
+                      name: ticket.user_name,
+                      email: ticket.user_email,
+                      tickets_count: supportTickets.filter(t => t.user_email === ticket.user_email).length,
+                      last_ticket_date: Math.max(...supportTickets
+                        .filter(t => t.user_email === ticket.user_email)
+                        .map(t => new Date(t.created_at).getTime())),
+                      status: 'active' as const
+                    }
+                  ])
+                ).values()).map((contact) => (
+                  <div key={contact.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
-                      <Checkbox 
-                        checked={selectedParticipants.includes(participant.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedParticipants([...selectedParticipants, participant.id]);
-                          } else {
-                            setSelectedParticipants(selectedParticipants.filter(id => id !== participant.id));
-                          }
-                        }}
-                      />
                       <div>
-                        <h3 className="font-medium">{participant.name}</h3>
+                        <h3 className="font-medium">{contact.name}</h3>
                         <div className="flex items-center space-x-4 text-sm text-foreground-muted">
                           <span className="flex items-center">
                             <Mail className="w-3 h-3 mr-1" />
-                            {participant.email}
+                            {contact.email}
                           </span>
                           <span className="flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {participant.phone}
+                            <MessageSquare className="w-3 h-3 mr-1" />
+                            {contact.tickets_count} ticket(s)
+                          </span>
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            Último contato: {new Date(contact.last_ticket_date).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
-                        <p className="text-xs text-foreground-muted">
-                          Rifas: {participant.raffles.join(', ')}
-                        </p>
                       </div>
                     </div>
-                    <Badge className={participant.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                      {participant.status === 'active' ? 'Ativo' : 'Inativo'}
+                    <Badge className="bg-green-100 text-green-800">
+                      Atendido
                     </Badge>
                   </div>
                 ))}
+                {supportTickets.length === 0 && (
+                  <div className="text-center py-8 text-foreground-muted">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum contato atendido via tickets ainda.</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
 
         <TabsContent value="tickets" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
