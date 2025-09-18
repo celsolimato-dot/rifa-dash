@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { RaffleService, Raffle } from "../services/raffleService";
 import { 
   Dialog,
@@ -41,7 +42,7 @@ const AllRaffles = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRaffle, setSelectedRaffle] = useState<Raffle | null>(null);
   const [selectedWinner, setSelectedWinner] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"rifas">("rifas");
+  const [activeTab, setActiveTab] = useState<string>("rifas");
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [winners, setWinners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
