@@ -29,6 +29,9 @@ import {
   Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RealRaffleService } from "@/services/realRaffleService";
+import { useRealAuth } from "@/contexts/RealAuthContext";
+import { toast } from "sonner";
 
 interface RaffleFormData {
   title: string;
@@ -70,6 +73,8 @@ const statusOptions = [
 
 export default function NewRaffle() {
   const navigate = useNavigate();
+  const { user } = useRealAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<RaffleFormData>({
     title: "",
     description: "",
@@ -168,19 +173,55 @@ export default function NewRaffle() {
     setSelectedImages(newSelectedImages);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validações básicas
     if (!formData.title || !formData.prize || !formData.ticketPrice || !formData.totalTickets) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
-    // Simular salvamento
-    console.log("Dados da rifa:", formData);
-    alert("Rifa criada com sucesso!");
-    navigate("/admin/rifas");
+    if (!user) {
+      toast.error("Você precisa estar logado para criar uma rifa.");
+      return;
+    }
+
+    if (!formData.drawDate) {
+      toast.error("Por favor, selecione uma data para o sorteio.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Preparar os dados para inserção
+      const raffleData = {
+        title: formData.title,
+        description: formData.description || '',
+        prize: formData.prize,
+        prize_value: parseFloat(formData.prizeValue) || 0,
+        ticket_price: parseFloat(formData.ticketPrice),
+        total_tickets: parseInt(formData.totalTickets),
+        draw_date: formData.drawDate.toISOString(),
+        status: formData.status,
+        category: formData.category || 'Outros',
+        image_url: formData.images.length > 0 ? formData.images[0] : null,
+        institution_name: formData.institution.name || null,
+        institution_logo: formData.institution.logo || null,
+        created_by: user.id
+      };
+
+      await RealRaffleService.createRaffle(raffleData);
+      
+      toast.success("Rifa criada com sucesso!");
+      navigate("/admin/rifas");
+    } catch (error: any) {
+      console.error("Erro ao criar rifa:", error);
+      toast.error(error.message || "Erro ao criar rifa. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const calculateRevenue = () => {
@@ -213,9 +254,13 @@ export default function NewRaffle() {
           <Button variant="outline" onClick={() => navigate("/admin/rifas")}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="flex items-center space-x-2">
+          <Button 
+            onClick={handleSubmit} 
+            className="flex items-center space-x-2"
+            disabled={isSubmitting}
+          >
             <Save className="h-4 w-4" />
-            <span>Salvar Rifa</span>
+            <span>{isSubmitting ? "Salvando..." : "Salvar Rifa"}</span>
           </Button>
         </div>
       </div>
