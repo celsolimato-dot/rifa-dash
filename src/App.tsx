@@ -11,6 +11,7 @@ import { NextDrawCardProvider } from "@/contexts/NextDrawCardContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import BackToTop from "@/components/BackToTop";
+import InstallPWA from "@/components/InstallPWA";
 import Index from "./pages/Index";
 import PublicRaffles from "./pages/PublicRaffles";
 import Auth from "./pages/Auth";
@@ -99,6 +100,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <BackToTop />
+                <InstallPWA />
               </BrowserRouter>
               </TooltipProvider>
             </NextDrawCardProvider>
