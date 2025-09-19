@@ -98,24 +98,41 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
     <div className="space-y-6">
       {/* Winner Alert */}
       {showWinnerAlert && wonRaffles.length > 0 && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6 animate-bounce">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Trophy className="w-8 h-8 text-yellow-600 mr-3" />
-              <div>
-                <h3 className="text-xl font-bold text-yellow-800">🎉 Parabéns! Você ganhou!</h3>
-                <p className="text-yellow-700">
-                  Você foi sorteado na rifa "{wonRaffles[0].title}" com o número {wonRaffles[0].winning_number}!
-                </p>
+        <div className="bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 border-2 border-yellow-300 rounded-xl p-6 animate-fade-in shadow-lg">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-4">
+              <div className="bg-yellow-100 p-3 rounded-full">
+                <Trophy className="w-8 h-8 text-yellow-600" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-yellow-800 flex items-center">
+                  🎉 PARABÉNS! VOCÊ GANHOU! 🎉
+                </h3>
+                <div className="space-y-1">
+                  <p className="text-yellow-700 font-semibold text-lg">
+                    Rifa: <span className="text-yellow-900">{wonRaffles[0].title}</span>
+                  </p>
+                  <div className="flex items-center space-x-3">
+                    <span className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full font-bold text-sm">
+                      Número Sorteado: {wonRaffles[0].winning_number}
+                    </span>
+                    <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full font-bold text-sm">
+                      Data: {new Date(wonRaffles[0].draw_completed_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <p className="text-yellow-600 text-sm mt-2">
+                    Entre em contato conosco para retirar seu prêmio! 🏆
+                  </p>
+                </div>
               </div>
             </div>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setShowWinnerAlert(false)}
-              className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+              className="border-yellow-300 text-yellow-700 hover:bg-yellow-100 shrink-0"
             >
-              Fechar
+              ✕ Fechar
             </Button>
           </div>
         </div>
@@ -183,7 +200,7 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
               <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
             ) : (
               <div className="text-2xl font-bold text-foreground">
-                {stats.premiosGanhos}
+                R$ {stats.premiosGanhos.toFixed(2).replace('.', ',')}
               </div>
             )}
             <p className="text-xs text-foreground-muted">

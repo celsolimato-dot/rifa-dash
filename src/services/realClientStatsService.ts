@@ -68,8 +68,21 @@ export class RealClientStatsService {
       );
       const rifasAtivas = rifasAtivasIds.size;
       
-      // Prêmios ganhos (implementar quando houver sistema de ganhadores)
-      const premiosGanhos = 0;
+      // Buscar rifas que o usuário ganhou
+      const { data: wonRaffles, error: wonRafflesError } = await supabase
+        .from('raffles')
+        .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
+        .eq('winner_email', userEmail)
+        .eq('status', 'completed');
+
+      if (wonRafflesError) {
+        console.error('❌ Erro ao buscar rifas ganhas:', wonRafflesError);
+      }
+
+      console.log('🏆 Rifas ganhas encontradas:', wonRaffles?.length || 0);
+
+      // Calcular prêmios ganhos baseado nas rifas vencidas
+      const premiosGanhos = wonRaffles?.reduce((sum, raffle) => sum + (raffle.prize_value || 0), 0) || 0;
       
       // Economia total (diferença entre valor do prêmio e valor investido)
       const economiaTotal = Math.max(0, tickets?.reduce((sum, ticket) => {
@@ -125,16 +138,52 @@ export class RealClientStatsService {
         throw error;
       }
 
-      console.log('✅ Atividades encontradas:', tickets?.length || 0);
+      // Buscar rifas ganhas pelo usuário
+      const { data: wonRaffles, error: wonError } = await supabase
+        .from('raffles')
+        .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
+        .eq('winner_email', userEmail)
+        .eq('status', 'completed')
+        .order('draw_completed_at', { ascending: false })
+        .limit(3);
 
-      return tickets?.map(ticket => ({
-        id: ticket.id,
-        type: 'participacao' as const,
-        title: `Participação em ${ticket.raffles?.title || 'Rifa'}`,
-        date: ticket.purchase_date || new Date().toISOString(),
-        value: ticket.raffles?.ticket_price || 0,
-        status: ticket.raffles?.status || 'unknown'
-      })) || [];
+      if (wonError) {
+        console.error('❌ Erro ao buscar rifas ganhas:', wonError);
+      }
+
+      console.log('✅ Atividades encontradas:', tickets?.length || 0);
+      console.log('🏆 Vitórias encontradas:', wonRaffles?.length || 0);
+
+      const activities: RealRecentActivity[] = [];
+
+      // Adicionar participações
+      tickets?.forEach(ticket => {
+        activities.push({
+          id: ticket.id,
+          type: 'participacao' as const,
+          title: `Participação em ${ticket.raffles?.title || 'Rifa'}`,
+          date: ticket.purchase_date || new Date().toISOString(),
+          value: ticket.raffles?.ticket_price || 0,
+          status: ticket.raffles?.status || 'unknown'
+        });
+      });
+
+      // Adicionar vitórias
+      wonRaffles?.forEach(raffle => {
+        activities.push({
+          id: `win_${raffle.id}`,
+          type: 'premio' as const,
+          title: `🏆 Prêmio ganho em ${raffle.title}`,
+          date: raffle.draw_completed_at || new Date().toISOString(),
+          value: raffle.prize_value || 0,
+          status: 'ganho'
+        });
+      });
+
+      // Ordenar por data e limitar
+      return activities
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
     } catch (error) {
       console.error('❌ Erro ao buscar atividade recente:', error);
       return [];

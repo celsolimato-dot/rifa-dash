@@ -199,10 +199,16 @@ export const ClientHistoricoSection: React.FC = () => {
               {formatCurrency(participation.amount)}
             </p>
             <Badge variant={
-              participation.status === 'ativa' ? 'default' :
+              participation.status === 'active' ? 'default' :
               participation.result === 'ganhou' ? 'secondary' : 'outline'
+            } className={
+              participation.result === 'ganhou' 
+                ? 'bg-green-500 text-white' 
+                : participation.status === 'active' 
+                  ? 'bg-blue-500 text-white' 
+                  : ''
             }>
-              {participation.status === 'ativa' ? 'Ativa' :
+              {participation.status === 'active' ? 'Ativa' :
                participation.result === 'ganhou' ? 'Ganhou' : 'Perdeu'}
             </Badge>
           </div>

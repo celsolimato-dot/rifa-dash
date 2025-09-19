@@ -112,7 +112,10 @@ export class RealClientHistoryService {
             title,
             ticket_price,
             draw_date,
-            status
+            status,
+            winner_email,
+            winning_number,
+            draw_completed_at
           )
         `)
         .eq('buyer_email', userEmail)
@@ -133,6 +136,18 @@ export class RealClientHistoryService {
         const raffleId = ticket.raffles.id;
         
         if (!participationMap.has(raffleId)) {
+          // Determinar resultado da participação
+          let result = 'pendente';
+          if (ticket.raffles.status === 'completed') {
+            if (ticket.raffles.winner_email === userEmail) {
+              result = 'ganhou';
+            } else {
+              result = 'perdeu';
+            }
+          } else if (ticket.raffles.status === 'active') {
+            result = 'pendente';
+          }
+
           participationMap.set(raffleId, {
             id: `participation_${raffleId}`,
             raffleTitle: ticket.raffles.title,
@@ -141,6 +156,8 @@ export class RealClientHistoryService {
             participationDate: ticket.purchase_date,
             drawDate: ticket.raffles.draw_date,
             status: ticket.raffles.status,
+            result: result,
+            winnerNumber: ticket.raffles.winning_number ? parseInt(ticket.raffles.winning_number) : undefined,
             raffleId: raffleId
           });
         }
@@ -161,6 +178,7 @@ export class RealClientHistoryService {
     try {
       console.log('🔄 Buscando estatísticas do cliente para:', userEmail);
       
+      // Buscar bilhetes do usuário
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
@@ -177,7 +195,19 @@ export class RealClientHistoryService {
         throw error;
       }
 
+      // Buscar rifas que o usuário ganhou
+      const { data: wonRaffles, error: wonRafflesError } = await supabase
+        .from('raffles')
+        .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
+        .eq('winner_email', userEmail)
+        .eq('status', 'completed');
+
+      if (wonRafflesError) {
+        console.error('❌ Erro ao buscar rifas ganhas:', wonRafflesError);
+      }
+
       console.log('✅ Bilhetes para estatísticas encontrados:', tickets?.length || 0);
+      console.log('🏆 Rifas ganhas encontradas:', wonRaffles?.length || 0);
 
       let totalInvested = 0;
       let totalParticipations = 0;
@@ -187,9 +217,9 @@ export class RealClientHistoryService {
         totalParticipations++;
       });
 
-      // For now, set wins to 0 since we don't have winner tracking implemented
-      const totalWon = 0;
-      const totalWins = 0;
+      // Calcular total ganho e número de vitórias
+      const totalWon = wonRaffles?.reduce((sum, raffle) => sum + (raffle.prize_value || 0), 0) || 0;
+      const totalWins = wonRaffles?.length || 0;
       const netBalance = totalWon - totalInvested;
 
       console.log('📊 Estatísticas calculadas:', { totalInvested, totalWon, netBalance, totalParticipations, totalWins });
