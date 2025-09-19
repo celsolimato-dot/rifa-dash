@@ -269,7 +269,7 @@ const AllRaffles = () => {
     const statusConfig = {
       active: { label: "Ativa", variant: "default" as const, color: "bg-green-500" },
       paused: { label: "Pausada", variant: "secondary" as const, color: "bg-yellow-500" },
-      completed: { label: "Finalizada", variant: "outline" as const, color: "bg-blue-500" },
+      finished: { label: "Finalizada", variant: "outline" as const, color: "bg-blue-500" },
       draft: { label: "Rascunho", variant: "secondary" as const, color: "bg-gray-500" }
     };
     

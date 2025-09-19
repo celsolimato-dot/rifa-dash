@@ -52,7 +52,7 @@ export const useAdminStats = () => {
 
       // Calcular taxa de conversão (simplificada)
       const conversionRate = allRaffles.length > 0 
-        ? (allRaffles.filter(r => r.status === 'completed').length / allRaffles.length) * 100 
+        ? (allRaffles.filter(r => r.status === 'finished').length / allRaffles.length) * 100 
         : 0;
 
       setStats({

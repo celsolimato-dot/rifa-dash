@@ -64,9 +64,9 @@ export class ClientRafflesService {
     }
   }
 
-  static async getCompletedRaffles(userEmail: string): Promise<ClientRaffle[]> {
+  static async getFinishedRaffles(userEmail: string): Promise<ClientRaffle[]> {
     try {
-      // Get completed raffles where user participated
+      // Get finished raffles where user participated
       const { data: userTickets, error: ticketsError } = await supabase
         .from('tickets')
         .select('raffle_id, number')
@@ -81,7 +81,7 @@ export class ClientRafflesService {
         .from('raffles')
         .select('*')
         .in('id', raffleIds)
-        .eq('status', 'completed')
+        .eq('status', 'finished')
         .order('draw_date', { ascending: false });
 
       if (rafflesError) throw rafflesError;

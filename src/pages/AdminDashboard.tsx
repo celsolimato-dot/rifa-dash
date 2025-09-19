@@ -37,7 +37,7 @@ const AdminDashboard = () => {
     switch (status) {
       case 'active':
         return <Badge variant="success">Ativa</Badge>;
-      case 'completed':
+      case 'finished':
         return <Badge variant="outline">Finalizada</Badge>;
       case 'draft':
         return <Badge variant="secondary">Rascunho</Badge>;

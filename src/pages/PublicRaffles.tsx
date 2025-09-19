@@ -36,15 +36,15 @@ const PublicRaffles = () => {
     try {
       setIsLoading(true);
       // Buscar rifas ativas e completadas
-      const [activeRaffles, completedRaffles] = await Promise.all([
+      const [activeRaffles, finishedRaffles] = await Promise.all([
         RaffleService.getRaffles({ status: 'active' }),
-        RaffleService.getRaffles({ status: 'completed' })
+        RaffleService.getRaffles({ status: 'finished' })
       ]);
       
       // Combinar e ordenar: rifas ativas primeiro, depois completadas
       const allRaffles = [
         ...(activeRaffles || []),
-        ...(completedRaffles || [])
+        ...(finishedRaffles || [])
       ].sort((a, b) => {
         // Rifas ativas primeiro
         if (a.status === 'active' && b.status !== 'active') return -1;
@@ -68,14 +68,14 @@ const PublicRaffles = () => {
   );
 
   const getStatusBadge = (raffle: Raffle) => {
-    if (raffle.status === "completed" && raffle.winner_name) {
+    if (raffle.status === "finished" && raffle.winner_name) {
       return <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">Sorteada</Badge>;
     }
     
     switch (raffle.status) {
       case "active":
         return <Badge variant="default" className="bg-accent-success text-white">Ativa</Badge>;
-      case "completed":
+      case "finished":
         return <Badge variant="secondary" className="bg-accent-gold text-white">Finalizada</Badge>;
       default:
         return <Badge variant="outline">Desconhecido</Badge>;
@@ -186,7 +186,7 @@ const PublicRaffles = () => {
                 </div>
 
                 {/* Action Button or Winner Info */}
-                {raffle.status === "completed" && raffle.winner_name ? (
+                {raffle.status === "finished" && raffle.winner_name ? (
                   <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
                     <div className="flex items-center justify-center mb-2">
                       <Trophy className="w-5 h-5 text-yellow-600 mr-2" />

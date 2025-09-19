@@ -75,7 +75,7 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
         .from('raffles')
         .select('id, title, winner_name, winner_email, winning_number, draw_completed_at')
         .eq('winner_email', user.email)
-        .eq('status', 'completed')
+        .eq('status', 'finished')
         .not('winner_name', 'is', null);
 
       if (error) {

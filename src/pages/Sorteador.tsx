@@ -56,15 +56,15 @@ export default function Sorteador() {
     try {
       setIsLoading(true);
       // Buscar rifas ativas e completadas
-      const [activeRaffles, completedRaffles] = await Promise.all([
+      const [activeRaffles, finishedRaffles] = await Promise.all([
         RaffleService.getRaffles({ status: 'active' }),
-        RaffleService.getRaffles({ status: 'completed' })
+        RaffleService.getRaffles({ status: 'finished' })
       ]);
       
       // Combinar e ordenar: rifas ativas primeiro, depois completadas
       const allRaffles = [
         ...(activeRaffles || []),
-        ...(completedRaffles || [])
+        ...(finishedRaffles || [])
       ].sort((a, b) => {
         // Rifas ativas primeiro
         if (a.status === 'active' && b.status !== 'active') return -1;
@@ -154,7 +154,7 @@ export default function Sorteador() {
     console.log('🔐 Usuário autenticado para sorteio:', currentUser.email);
     
     // Check if raffle is already completed
-    if (selectedRaffle.status === 'completed' && selectedRaffle.winner_name) {
+    if (selectedRaffle.status === 'finished' && selectedRaffle.winner_name) {
       toast.error('Esta rifa já foi sorteada!');
       return;
     }
@@ -232,7 +232,7 @@ export default function Sorteador() {
         const { data: updateResult, error } = await supabase
           .from('raffles')
           .update({
-            status: 'completed',
+            status: 'finished', // Corrigido: usar 'finished' em vez de 'completed'
             winner_name: winnerTicket.buyer_name,
             winner_email: winnerTicket.buyer_email,
             winning_number: winnerTicket.number.toString(),
@@ -289,13 +289,13 @@ export default function Sorteador() {
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800",
-      completed: "bg-blue-100 text-blue-800",
+      finished: "bg-blue-100 text-blue-800",
       cancelled: "bg-red-100 text-red-800"
     };
     
     const labels = {
       active: "Ativa",
-      completed: "Finalizada",
+      finished: "Finalizada",
       cancelled: "Cancelada"
     };
     
@@ -336,7 +336,7 @@ export default function Sorteador() {
               <CardTitle>Selecionar Rifa</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {raffles.filter(r => r.status === "active" || (r.status === "completed" && r.winner_name)).map((raffle) => (
+              {raffles.filter(r => r.status === "active" || (r.status === "finished" && r.winner_name)).map((raffle) => (
                 <Card 
                   key={raffle.id} 
                   className={`cursor-pointer transition-all ${
@@ -353,7 +353,7 @@ export default function Sorteador() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <h3 className="font-medium text-sm">{raffle.title}</h3>
-                        {raffle.status === "completed" && raffle.winner_name ? (
+                        {raffle.status === "finished" && raffle.winner_name ? (
                           <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
                             <Trophy className="w-3 h-3 mr-1" />
                             Sorteada
@@ -363,7 +363,7 @@ export default function Sorteador() {
                         )}
                       </div>
                       
-                      {raffle.status === "completed" && raffle.winner_name ? (
+                      {raffle.status === "finished" && raffle.winner_name ? (
                         <div className="text-xs text-foreground-muted bg-yellow-50 p-2 rounded">
                           <div>Vencedor: <span className="font-medium">{raffle.winner_name}</span></div>
                           <div>Número: <span className="font-medium">{raffle.winning_number}</span></div>

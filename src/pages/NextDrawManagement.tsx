@@ -43,7 +43,7 @@ const NextDrawManagement = () => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'paused': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'finished': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -52,7 +52,7 @@ const NextDrawManagement = () => {
     switch (status) {
       case 'active': return 'Ativo';
       case 'paused': return 'Pausado';
-      case 'completed': return 'Finalizado';
+      case 'finished': return 'Finalizado';
       default: return 'Desconhecido';
     }
   };
@@ -162,7 +162,7 @@ const NextDrawManagement = () => {
                     <SelectContent>
                       <SelectItem value="active">Ativo</SelectItem>
                       <SelectItem value="paused">Pausado</SelectItem>
-                      <SelectItem value="completed">Finalizado</SelectItem>
+                      <SelectItem value="finished">Finalizado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

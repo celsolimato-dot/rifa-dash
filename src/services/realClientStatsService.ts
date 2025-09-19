@@ -73,7 +73,7 @@ export class RealClientStatsService {
         .from('raffles')
         .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
         .eq('winner_email', userEmail)
-        .eq('status', 'completed');
+        .eq('status', 'finished');
 
       if (wonRafflesError) {
         console.error('❌ Erro ao buscar rifas ganhas:', wonRafflesError);
@@ -143,7 +143,7 @@ export class RealClientStatsService {
         .from('raffles')
         .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
         .eq('winner_email', userEmail)
-        .eq('status', 'completed')
+        .eq('status', 'finished')
         .order('draw_completed_at', { ascending: false })
         .limit(3);
 

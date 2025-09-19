@@ -138,7 +138,7 @@ export class RealClientHistoryService {
         if (!participationMap.has(raffleId)) {
           // Determinar resultado da participação
           let result = 'pendente';
-          if (ticket.raffles.status === 'completed') {
+          if (ticket.raffles.status === 'finished') {
             if (ticket.raffles.winner_email === userEmail) {
               result = 'ganhou';
             } else {
@@ -200,7 +200,7 @@ export class RealClientHistoryService {
         .from('raffles')
         .select('id, title, prize_value, winner_email, winning_number, draw_completed_at')
         .eq('winner_email', userEmail)
-        .eq('status', 'completed');
+        .eq('status', 'finished');
 
       if (wonRafflesError) {
         console.error('❌ Erro ao buscar rifas ganhas:', wonRafflesError);

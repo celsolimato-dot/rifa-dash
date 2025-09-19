@@ -68,13 +68,13 @@ export default function Reports() {
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800",
-      completed: "bg-blue-100 text-blue-800",
+      finished: "bg-blue-100 text-blue-800",
       cancelled: "bg-red-100 text-red-800"
     };
     
     const labels = {
       active: "Ativa",
-      completed: "Finalizada",
+      finished: "Finalizada",
       cancelled: "Cancelada"
     };
     

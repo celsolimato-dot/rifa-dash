@@ -248,7 +248,7 @@ export default function ActiveRaffles() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {raffle.status === 'completed' && raffle.winner_name ? (
+                    {raffle.status === 'finished' && raffle.winner_name ? (
                       <Badge 
                         variant="secondary" 
                         className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
@@ -287,7 +287,7 @@ export default function ActiveRaffles() {
                     {format(new Date(raffle.draw_date), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                   <TableCell>
-                    {raffle.status === 'completed' && raffle.winner_name ? (
+                    {raffle.status === 'finished' && raffle.winner_name ? (
                       <div className="space-y-1">
                         <div className="font-medium text-green-600">{raffle.winner_name}</div>
                         <div className="text-xs text-foreground-muted">Nº {raffle.winning_number}</div>

@@ -12,7 +12,7 @@ export interface NextDraw {
   totalTickets: number;
   soldTickets: number;
   ticketPrice: number;
-  status: 'active' | 'paused' | 'completed';
+  status: 'active' | 'paused' | 'finished';
   image: string;
   category: string;
 }
@@ -54,7 +54,7 @@ export const NextDrawProvider: React.FC<{ children: ReactNode }> = ({ children }
           totalTickets: raffle.total_tickets,
           soldTickets: raffle.sold_tickets,
           ticketPrice: raffle.ticket_price,
-          status: raffle.status as 'active' | 'paused' | 'completed',
+          status: raffle.status as 'active' | 'paused' | 'finished',
           image: raffle.image_url || '',
           category: raffle.category
         };

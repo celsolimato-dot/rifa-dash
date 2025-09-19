@@ -24,7 +24,7 @@ export interface RaffleHistoryItem {
   numbers: number[];
   totalInvested: number;
   drawDate: string;
-  status: "active" | "completed" | "won" | "lost";
+  status: "active" | "finished" | "won" | "lost";
   result?: {
     winningNumber: number;
     prize: string;
@@ -54,7 +54,7 @@ const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const matchesTab = activeTab === 'all' || 
       (activeTab === 'active' && item.status === 'active') ||
-      (activeTab === 'completed' && ['completed', 'won', 'lost'].includes(item.status)) ||
+      (activeTab === 'finished' && ['finished', 'won', 'lost'].includes(item.status)) ||
       (activeTab === 'won' && item.status === 'won') ||
       (activeTab === 'lost' && item.status === 'lost');
     
@@ -65,7 +65,7 @@ const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
     switch (status) {
       case 'active':
         return <Badge variant="default" className="bg-blue-500">Ativa</Badge>;
-      case 'completed':
+      case 'finished':
         return <Badge variant="outline">Finalizada</Badge>;
       case 'won':
         return <Badge variant="default" className="bg-green-500">Ganhou</Badge>;
@@ -168,7 +168,7 @@ const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
             <TabsList className="grid w-full grid-cols-5 bg-background-secondary">
               <TabsTrigger value="all">Todas</TabsTrigger>
               <TabsTrigger value="active">Ativas</TabsTrigger>
-              <TabsTrigger value="completed">Finalizadas</TabsTrigger>
+              <TabsTrigger value="finished">Finalizadas</TabsTrigger>
               <TabsTrigger value="won">Ganhas</TabsTrigger>
               <TabsTrigger value="lost">Perdidas</TabsTrigger>
             </TabsList>
@@ -234,7 +234,7 @@ const RaffleHistoryModal: React.FC<RaffleHistoryModalProps> = ({
                                 ))}
                               </div>
 
-                              {/* Result (for completed raffles) */}
+                              {/* Result (for finished raffles) */}
                               {item.result && (
                                 <div className="p-3 bg-background rounded-lg border border-border">
                                   <div className="flex items-center justify-between">

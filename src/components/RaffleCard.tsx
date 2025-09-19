@@ -172,7 +172,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
         </div>
         
         {/* Status Badge */}
-        {status === 'completed' && raffleData.winner_name ? (
+        {status === 'finished' && raffleData.winner_name ? (
           <Badge className="absolute top-3 right-3 z-10 bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg animate-pulse">
             <Trophy className="w-3 h-3 mr-1" />
             Sorteada
@@ -237,7 +237,7 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
         </div>
         
         {/* Winner Info or Action Buttons */}
-        {status === 'completed' && raffleData.winner_name ? (
+        {status === 'finished' && raffleData.winner_name ? (
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
             <div className="flex items-center justify-center mb-2">
               <Trophy className="w-5 h-5 text-yellow-600 mr-2" />

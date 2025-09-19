@@ -53,7 +53,7 @@ const statusOptions = [
   { value: "draft", label: "Rascunho", color: "bg-gray-500" },
   { value: "active", label: "Ativa", color: "bg-green-500" },
   { value: "paused", label: "Pausada", color: "bg-yellow-500" },
-  { value: "completed", label: "Finalizada", color: "bg-blue-500" },
+  { value: "finished", label: "Finalizada", color: "bg-blue-500" },
 ];
 
 export default function EditRaffle() {

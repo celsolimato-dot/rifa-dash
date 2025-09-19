@@ -22,7 +22,7 @@ const RaffleCarousel = () => {
     try {
       setIsLoading(true);
       // Buscar rifas ativas e completadas
-      const [activeRaffles, completedRaffles] = await Promise.all([
+      const [activeRaffles, finishedRaffles] = await Promise.all([
         RaffleService.getRaffles({ status: 'active' }),
         RaffleService.getRaffles({ status: 'completed' })
       ]);
@@ -30,7 +30,7 @@ const RaffleCarousel = () => {
       // Combinar e ordenar: rifas ativas primeiro, depois completadas
       const allRaffles = [
         ...(activeRaffles || []),
-        ...(completedRaffles || [])
+        ...(finishedRaffles || [])
       ].sort((a, b) => {
         // Rifas ativas primeiro
         if (a.status === 'active' && b.status !== 'active') return -1;

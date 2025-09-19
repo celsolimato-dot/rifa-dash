@@ -45,7 +45,7 @@ export const ClientRifasSection: React.FC<ClientRifasSectionProps> = ({ onOpenNu
       setIsLoading(true);
       const [active, finished, available] = await Promise.all([
         ClientRafflesService.getActiveRaffles(user!.email),
-        ClientRafflesService.getCompletedRaffles(user!.email),
+        ClientRafflesService.getFinishedRaffles(user!.email),
         ClientRafflesService.getActiveRaffles(user!.email) // Use same for now
       ]);
       
