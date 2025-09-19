@@ -220,6 +220,7 @@ export default function ActiveRaffles() {
                 <TableHead>Preço</TableHead>
                 <TableHead>Receita</TableHead>
                 <TableHead>Sorteio</TableHead>
+                <TableHead>Vencedor</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -247,12 +248,22 @@ export default function ActiveRaffles() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${statusConfig[raffle.status].color} text-white`}
-                    >
-                      {statusConfig[raffle.status].label}
-                    </Badge>
+                    {raffle.status === 'completed' && raffle.winner_name ? (
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                      >
+                        <Trophy className="w-3 h-3 mr-1" />
+                        Sorteada
+                      </Badge>
+                    ) : (
+                      <Badge 
+                        variant="secondary" 
+                        className={`${statusConfig[raffle.status].color} text-white`}
+                      >
+                        {statusConfig[raffle.status].label}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -274,6 +285,19 @@ export default function ActiveRaffles() {
                   </TableCell>
                   <TableCell>
                     {format(new Date(raffle.draw_date), "dd/MM/yyyy", { locale: ptBR })}
+                  </TableCell>
+                  <TableCell>
+                    {raffle.status === 'completed' && raffle.winner_name ? (
+                      <div className="space-y-1">
+                        <div className="font-medium text-green-600">{raffle.winner_name}</div>
+                        <div className="text-xs text-foreground-muted">Nº {raffle.winning_number}</div>
+                        <div className="text-xs text-foreground-muted">
+                          {raffle.draw_completed_at && format(new Date(raffle.draw_completed_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-foreground-muted text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

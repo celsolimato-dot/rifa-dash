@@ -29,6 +29,11 @@ export interface Raffle {
   description?: string;
   image_url?: string;
   created_by: string;
+  // Winner fields for completed raffles
+  winner_name?: string;
+  winner_email?: string;
+  winning_number?: string;
+  draw_completed_at?: string;
 }
 
 export interface Participant {

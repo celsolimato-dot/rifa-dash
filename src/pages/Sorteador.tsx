@@ -126,6 +126,12 @@ export default function Sorteador() {
   const startDraw = () => {
     if (!selectedRaffle) return;
     
+    // Check if raffle is already completed
+    if (selectedRaffle.status === 'completed' && selectedRaffle.winner_name) {
+      toast.error('Esta rifa já foi sorteada!');
+      return;
+    }
+    
     setIsDrawing(true);
     setDrawResult(null);
     setProgress(0);
@@ -175,15 +181,43 @@ export default function Sorteador() {
     };
     
     if (winner) {
-      const result: DrawResult = {
-        winnerTicket: winnerTicket.number.toString(),
-        winner: winner,
-        timestamp: new Date().toISOString()
-      };
-      
-      setCurrentNumber(winnerTicket.number.toString());
-      setDrawResult(result);
-      setShowConfetti(true);
+      try {
+        // Update raffle with winner information and change status to completed
+        const { error } = await supabase
+          .from('raffles')
+          .update({
+            status: 'completed',
+            winner_name: winnerTicket.buyer_name,
+            winner_email: winnerTicket.buyer_email,
+            winning_number: winnerTicket.number.toString(),
+            draw_completed_at: new Date().toISOString()
+          })
+          .eq('id', selectedRaffle.id);
+
+        if (error) {
+          console.error('Erro ao salvar resultado do sorteio:', error);
+          toast.error('Erro ao salvar resultado do sorteio');
+          return;
+        }
+
+        const result: DrawResult = {
+          winnerTicket: winnerTicket.number.toString(),
+          winner: winner,
+          timestamp: new Date().toISOString()
+        };
+        
+        setCurrentNumber(winnerTicket.number.toString());
+        setDrawResult(result);
+        setShowConfetti(true);
+        
+        toast.success(`🎉 Sorteio realizado! Vencedor: ${winnerTicket.buyer_name}`);
+        
+        // Reload raffles to update the list
+        loadRaffles();
+      } catch (error) {
+        console.error('Erro ao finalizar sorteio:', error);
+        toast.error('Erro ao finalizar sorteio');
+      }
     }
   };
 
@@ -245,39 +279,58 @@ export default function Sorteador() {
               <CardTitle>Selecionar Rifa</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {raffles.filter(r => r.status === "active").map((raffle) => (
+              {raffles.filter(r => r.status === "active" || (r.status === "completed" && r.winner_name)).map((raffle) => (
                 <Card 
                   key={raffle.id} 
                   className={`cursor-pointer transition-all ${
                     selectedRaffle?.id === raffle.id ? 'ring-2 ring-primary' : 'hover:shadow-md'
                   }`}
                   onClick={() => {
-                    setSelectedRaffle(raffle);
-                    loadParticipants(raffle.id);
+                    if (raffle.status === "active") {
+                      setSelectedRaffle(raffle);
+                      loadParticipants(raffle.id);
+                    }
                   }}
                 >
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <h3 className="font-medium text-sm">{raffle.title}</h3>
-                        {getStatusBadge(raffle.status)}
+                        {raffle.status === "completed" && raffle.winner_name ? (
+                          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                            <Trophy className="w-3 h-3 mr-1" />
+                            Sorteada
+                          </Badge>
+                        ) : (
+                          getStatusBadge(raffle.status)
+                        )}
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center">
-                          <Ticket className="w-3 h-3 mr-1 text-foreground-muted" />
-                           {raffle.sold_tickets}/{raffle.total_tickets}
-                         </div>
-                         <div className="flex items-center">
-                           <Users className="w-3 h-3 mr-1 text-foreground-muted" />
-                           {raffle.sold_tickets}
+                      {raffle.status === "completed" && raffle.winner_name ? (
+                        <div className="text-xs text-foreground-muted bg-yellow-50 p-2 rounded">
+                          <div>Vencedor: <span className="font-medium">{raffle.winner_name}</span></div>
+                          <div>Número: <span className="font-medium">{raffle.winning_number}</span></div>
+                          <div>Sorteio: {raffle.draw_completed_at && new Date(raffle.draw_completed_at).toLocaleString('pt-BR')}</div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center text-xs">
-                        <Calendar className="w-3 h-3 mr-1 text-foreground-muted" />
-                        Sorteio: {new Date(raffle.draw_date).toLocaleDateString('pt-BR')}
-                      </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center">
+                              <Ticket className="w-3 h-3 mr-1 text-foreground-muted" />
+                               {raffle.sold_tickets}/{raffle.total_tickets}
+                             </div>
+                             <div className="flex items-center">
+                               <Users className="w-3 h-3 mr-1 text-foreground-muted" />
+                               {raffle.sold_tickets}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center text-xs">
+                            <Calendar className="w-3 h-3 mr-1 text-foreground-muted" />
+                            Sorteio: {new Date(raffle.draw_date).toLocaleDateString('pt-BR')}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

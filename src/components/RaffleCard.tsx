@@ -28,6 +28,11 @@ interface RaffleData {
   institution?: string;
   rules?: string;
   imageUrl?: string;
+  // Winner fields for completed raffles
+  winner_name?: string;
+  winner_email?: string;
+  winning_number?: string;
+  draw_completed_at?: string;
 }
 
 interface RaffleCardProps {
@@ -52,6 +57,11 @@ interface RaffleCardProps {
   featured?: boolean;
   institution?: string;
   rules?: string;
+  // Winner fields for completed raffles  
+  winner_name?: string;
+  winner_email?: string;
+  winning_number?: string;
+  draw_completed_at?: string;
 }
 
 export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
@@ -162,9 +172,16 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
         </div>
         
         {/* Status Badge */}
-        <Badge className="absolute top-3 right-3 z-10 bg-green-500/90 text-white shadow-lg animate-fade-in">
-          Rifa Ativa
-        </Badge>
+        {status === 'completed' && raffleData.winner_name ? (
+          <Badge className="absolute top-3 right-3 z-10 bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg animate-pulse">
+            <Trophy className="w-3 h-3 mr-1" />
+            Sorteada
+          </Badge>
+        ) : (
+          <Badge className="absolute top-3 right-3 z-10 bg-green-500/90 text-white shadow-lg animate-fade-in">
+            Rifa Ativa
+          </Badge>
+        )}
       </div>
       
       {/* Enhanced Content */}
@@ -219,26 +236,51 @@ export const RaffleCard: React.FC<RaffleCardProps> = (props) => {
           </span>
         </div>
         
-        {/* Enhanced Action Buttons */}
-        <div className="flex gap-3 pt-2">
-          <Button 
-            variant="hero" 
-            className="flex-1 cursor-pointer bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold py-3 rounded-xl transition-all duration-300 hover-scale shadow-lg hover:shadow-primary/25"
-            onClick={handleParticipate}
-          >
-            <Trophy className="w-4 h-4 mr-2 text-white" />
-            Participar Agora
-          </Button>
-          <Button 
-            variant="outline" 
-            size="default" 
-            onClick={handleViewDetails}
-            className="border-primary/30 text-primary hover:bg-primary/5 font-semibold py-3 rounded-xl transition-all duration-300 hover-scale"
-          >
-            <Eye className="w-4 h-4 mr-1" />
-            Detalhes
-          </Button>
-        </div>
+        {/* Winner Info or Action Buttons */}
+        {status === 'completed' && raffleData.winner_name ? (
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
+            <div className="flex items-center justify-center mb-2">
+              <Trophy className="w-5 h-5 text-yellow-600 mr-2" />
+              <span className="text-lg font-bold text-yellow-800">Rifa Sorteada!</span>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold">Vencedor:</span> {raffleData.winner_name}
+              </p>
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold">Número:</span> {raffleData.winning_number}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full mt-3 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+              onClick={handleViewDetails}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Ver Resultado
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-3 pt-2">
+            <Button 
+              variant="hero" 
+              className="flex-1 cursor-pointer bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-bold py-3 rounded-xl transition-all duration-300 hover-scale shadow-lg hover:shadow-primary/25"
+              onClick={handleParticipate}
+            >
+              <Trophy className="w-4 h-4 mr-2 text-white" />
+              Participar Agora
+            </Button>
+            <Button 
+              variant="outline" 
+              size="default" 
+              onClick={handleViewDetails}
+              className="border-primary/30 text-primary hover:bg-primary/5 font-semibold py-3 rounded-xl transition-all duration-300 hover-scale"
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Detalhes
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Modal de Seleção de Números */}

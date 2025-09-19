@@ -110,6 +110,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           description: string | null
+          draw_completed_at: string | null
           draw_date: string
           id: string
           image_url: string | null
@@ -126,12 +127,16 @@ export type Database = {
           title: string
           total_tickets: number
           updated_at: string | null
+          winner_email: string | null
+          winner_name: string | null
+          winning_number: string | null
         }
         Insert: {
           category: string
           created_at?: string | null
           created_by: string
           description?: string | null
+          draw_completed_at?: string | null
           draw_date: string
           id?: string
           image_url?: string | null
@@ -148,12 +153,16 @@ export type Database = {
           title: string
           total_tickets?: number
           updated_at?: string | null
+          winner_email?: string | null
+          winner_name?: string | null
+          winning_number?: string | null
         }
         Update: {
           category?: string
           created_at?: string | null
           created_by?: string
           description?: string | null
+          draw_completed_at?: string | null
           draw_date?: string
           id?: string
           image_url?: string | null
@@ -170,6 +179,9 @@ export type Database = {
           title?: string
           total_tickets?: number
           updated_at?: string | null
+          winner_email?: string | null
+          winner_name?: string | null
+          winning_number?: string | null
         }
         Relationships: [
           {

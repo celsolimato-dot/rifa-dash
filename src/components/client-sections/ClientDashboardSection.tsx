@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { RealClientStatsService, RealClientStats, RealRecentActivity, RealActiveRaffle } from "@/services/realClientStatsService";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientDashboardSectionProps {
   onSectionChange?: (section: string) => void;
@@ -29,6 +30,8 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
   const [recentActivity, setRecentActivity] = useState<RealRecentActivity[]>([]);
   const [activeRaffles, setActiveRaffles] = useState<RealActiveRaffle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [wonRaffles, setWonRaffles] = useState<any[]>([]);
+  const [showWinnerAlert, setShowWinnerAlert] = useState(false);
 
   useEffect(() => {
     if (user?.email) {
@@ -54,6 +57,9 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
       setStats(statsData);
       setRecentActivity(activityData);
       setActiveRaffles(rafflesData);
+
+      // Check for won raffles
+      await checkWonRaffles();
     } catch (error) {
       console.error('❌ Erro ao carregar dados do dashboard:', error);
     } finally {
@@ -61,10 +67,60 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
     }
   };
 
+  const checkWonRaffles = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { data: wonRaffles, error } = await supabase
+        .from('raffles')
+        .select('id, title, winner_name, winner_email, winning_number, draw_completed_at')
+        .eq('winner_email', user.email)
+        .eq('status', 'completed')
+        .not('winner_name', 'is', null);
+
+      if (error) {
+        console.error('Erro ao verificar rifas ganhas:', error);
+        return;
+      }
+
+      if (wonRaffles && wonRaffles.length > 0) {
+        setWonRaffles(wonRaffles);
+        setShowWinnerAlert(true);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar rifas ganhas:', error);
+    }
+  };
+
 
 
   return (
     <div className="space-y-6">
+      {/* Winner Alert */}
+      {showWinnerAlert && wonRaffles.length > 0 && (
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6 animate-bounce">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Trophy className="w-8 h-8 text-yellow-600 mr-3" />
+              <div>
+                <h3 className="text-xl font-bold text-yellow-800">🎉 Parabéns! Você ganhou!</h3>
+                <p className="text-yellow-700">
+                  Você foi sorteado na rifa "{wonRaffles[0].title}" com o número {wonRaffles[0].winning_number}!
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowWinnerAlert(false)}
+              className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+            >
+              Fechar
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
