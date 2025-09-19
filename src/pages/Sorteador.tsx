@@ -141,8 +141,17 @@ export default function Sorteador() {
     return () => clearInterval(interval);
   }, [isDrawing, selectedRaffle]);
 
-  const startDraw = () => {
+  const startDraw = async () => {
     if (!selectedRaffle) return;
+    
+    // Verificar autenticação antes de iniciar
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      toast.error('Erro: Você precisa estar logado para realizar sorteios');
+      return;
+    }
+    
+    console.log('🔐 Usuário autenticado para sorteio:', currentUser.email);
     
     // Check if raffle is already completed
     if (selectedRaffle.status === 'completed' && selectedRaffle.winner_name) {
@@ -200,8 +209,27 @@ export default function Sorteador() {
     
     if (winner) {
       try {
+        console.log('🔍 Iniciando salvamento do sorteio...');
+        console.log('🎯 Dados do vencedor:', {
+          name: winnerTicket.buyer_name,
+          email: winnerTicket.buyer_email,
+          number: winnerTicket.number.toString()
+        });
+        console.log('🎲 Rifa selecionada:', selectedRaffle.id);
+        
+        // Verificar autenticação atual
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        console.log('👤 Usuário atual:', currentUser?.id, currentUser?.email);
+        
+        if (!currentUser) {
+          console.error('❌ Usuário não autenticado!');
+          toast.error('Erro: Usuário não autenticado. Faça login novamente.');
+          return;
+        }
+        
         // Update raffle with winner information and change status to completed
-        const { error } = await supabase
+        console.log('💾 Tentando salvar resultado...');
+        const { data: updateResult, error } = await supabase
           .from('raffles')
           .update({
             status: 'completed',
@@ -210,13 +238,24 @@ export default function Sorteador() {
             winning_number: winnerTicket.number.toString(),
             draw_completed_at: new Date().toISOString()
           })
-          .eq('id', selectedRaffle.id);
+          .eq('id', selectedRaffle.id)
+          .select();
+
+        console.log('📊 Resultado da atualização:', { updateResult, error });
 
         if (error) {
-          console.error('Erro ao salvar resultado do sorteio:', error);
-          toast.error('Erro ao salvar resultado do sorteio');
+          console.error('❌ Erro ao salvar resultado do sorteio:', error);
+          toast.error(`Erro ao salvar resultado: ${error.message}`);
           return;
         }
+
+        if (!updateResult || updateResult.length === 0) {
+          console.error('❌ Nenhuma linha foi atualizada!');
+          toast.error('Erro: Nenhuma rifa foi atualizada');
+          return;
+        }
+
+        console.log('✅ Sorteio salvo com sucesso!', updateResult);
 
         const result: DrawResult = {
           winnerTicket: winnerTicket.number.toString(),
