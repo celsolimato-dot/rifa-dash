@@ -81,6 +81,8 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
     console.log('🔍 checkWonRaffles: Iniciando busca para email:', user.email);
     
     try {
+      console.log('🔍 Executando query no supabase...');
+      
       const { data: wonRaffles, error } = await supabase
         .from('raffles')
         .select('id, title, winner_name, winner_email, winning_number, draw_completed_at, status')
@@ -88,27 +90,40 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
         .eq('status', 'finished')
         .not('winner_name', 'is', null);
 
+      console.log('🔍 Query completada!');
       console.log('🔍 Query resultado:', { wonRaffles, error });
+      console.log('🔍 wonRaffles tipo:', typeof wonRaffles);
+      console.log('🔍 wonRaffles Array?:', Array.isArray(wonRaffles));
 
       if (error) {
         console.error('❌ Erro ao verificar rifas ganhas:', error);
+        console.error('❌ Detalhes do erro:', JSON.stringify(error, null, 2));
         return;
       }
 
       console.log('🔍 Rifas ganhas encontradas:', wonRaffles?.length || 0);
       
       if (wonRaffles && wonRaffles.length > 0) {
-        console.log('🎉 Rifas ganhas:', wonRaffles);
+        console.log('🎉 Rifas ganhas detalhadas:', JSON.stringify(wonRaffles, null, 2));
+        console.log('🔍 Estado antes de setWonRaffles:', { showWinnerAlert, wonRaffles: wonRaffles.length });
+        
         setWonRaffles(wonRaffles);
         setShowWinnerAlert(true);
-        console.log('✅ showWinnerAlert definido como true');
+        
+        console.log('✅ setWonRaffles e setShowWinnerAlert executados');
+        
+        // Force re-render check
+        setTimeout(() => {
+          console.log('⏰ Timeout check - showWinnerAlert deveria ser true agora');
+        }, 100);
       } else {
         console.log('🚫 Nenhuma rifa ganha encontrada');
         setShowWinnerAlert(false);
         setWonRaffles([]);
       }
     } catch (error) {
-      console.error('❌ Erro ao verificar rifas ganhas:', error);
+      console.error('❌ CATCH: Erro ao verificar rifas ganhas:', error);
+      console.error('❌ CATCH: Stack trace:', error.stack);
     }
   };
 
