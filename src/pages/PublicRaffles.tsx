@@ -35,8 +35,26 @@ const PublicRaffles = () => {
   const loadRaffles = async () => {
     try {
       setIsLoading(true);
-      const data = await RaffleService.getRaffles({ status: 'active' });
-      setRaffles(data || []);
+      // Buscar rifas ativas e completadas
+      const [activeRaffles, completedRaffles] = await Promise.all([
+        RaffleService.getRaffles({ status: 'active' }),
+        RaffleService.getRaffles({ status: 'completed' })
+      ]);
+      
+      // Combinar e ordenar: rifas ativas primeiro, depois completadas
+      const allRaffles = [
+        ...(activeRaffles || []),
+        ...(completedRaffles || [])
+      ].sort((a, b) => {
+        // Rifas ativas primeiro
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (b.status === 'active' && a.status !== 'active') return 1;
+        
+        // Dentro do mesmo status, ordenar por data
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      setRaffles(allRaffles);
     } catch (error) {
       console.error('Erro ao carregar rifas:', error);
       setRaffles([]);
@@ -46,12 +64,15 @@ const PublicRaffles = () => {
   };
 
   const filteredRaffles = raffles.filter(raffle =>
-    raffle.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    raffle.status === "active"
+    raffle.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (raffle: Raffle) => {
+    if (raffle.status === "completed" && raffle.winner_name) {
+      return <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">Sorteada</Badge>;
+    }
+    
+    switch (raffle.status) {
       case "active":
         return <Badge variant="default" className="bg-accent-success text-white">Ativa</Badge>;
       case "completed":
@@ -115,7 +136,7 @@ const PublicRaffles = () => {
                   className="w-full h-48 object-contain bg-background-secondary"
                 />
                 <div className="absolute top-4 right-4">
-                  {getStatusBadge(raffle.status)}
+                  {getStatusBadge(raffle)}
                 </div>
               </div>
               
@@ -164,16 +185,33 @@ const PublicRaffles = () => {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => handleParticipate(raffle)}
-                  disabled={raffle.status !== "active"}
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  {raffle.status === "active" ? "Participar Agora" : "Finalizada"}
-                </Button>
+                {/* Action Button or Winner Info */}
+                {raffle.status === "completed" && raffle.winner_name ? (
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
+                    <div className="flex items-center justify-center mb-2">
+                      <Trophy className="w-5 h-5 text-yellow-600 mr-2" />
+                      <span className="text-lg font-bold text-yellow-800">Rifa Sorteada!</span>
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">Vencedor:</span> {raffle.winner_name}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">Número:</span> {raffle.winning_number}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => handleParticipate(raffle)}
+                    disabled={raffle.status !== "active"}
+                  >
+                    <Trophy className="w-4 h-4 mr-2" />
+                    {raffle.status === "active" ? "Participar Agora" : "Finalizada"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}

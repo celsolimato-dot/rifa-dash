@@ -21,8 +21,26 @@ const RaffleCarousel = () => {
   const loadRaffles = async () => {
     try {
       setIsLoading(true);
-      const data = await RaffleService.getRaffles({ status: 'active' });
-      setRaffles(data || []);
+      // Buscar rifas ativas e completadas
+      const [activeRaffles, completedRaffles] = await Promise.all([
+        RaffleService.getRaffles({ status: 'active' }),
+        RaffleService.getRaffles({ status: 'completed' })
+      ]);
+      
+      // Combinar e ordenar: rifas ativas primeiro, depois completadas
+      const allRaffles = [
+        ...(activeRaffles || []),
+        ...(completedRaffles || [])
+      ].sort((a, b) => {
+        // Rifas ativas primeiro
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (b.status === 'active' && a.status !== 'active') return 1;
+        
+        // Dentro do mesmo status, ordenar por data
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      setRaffles(allRaffles);
     } catch (error) {
       console.error('Erro ao carregar rifas:', error);
       setRaffles([]);
@@ -52,12 +70,12 @@ const RaffleCarousel = () => {
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Sparkles className="w-6 h-6 text-accent-gold" />
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Rifas <span className="bg-gradient-primary bg-clip-text text-transparent">Ativas</span>
+              Rifas <span className="bg-gradient-primary bg-clip-text text-transparent">Disponíveis</span>
             </h2>
             <Sparkles className="w-6 h-6 text-accent-gold" />
           </div>
           <p className="text-lg text-foreground-muted max-w-2xl mx-auto">
-            Escolha sua rifa favorita e concorra aos melhores prêmios. 
+            Explore rifas ativas e veja os resultados dos sorteios realizados. 
             Sorteios transparentes e prêmios incríveis te aguardam!
           </p>
         </div>
@@ -124,6 +142,10 @@ const RaffleCarousel = () => {
                     (raffle as any).image_url_3
                   ].filter(Boolean)}
                   image={raffle.image_url || prizeCarImage}
+                  winner_name={raffle.winner_name}
+                  winner_email={raffle.winner_email}
+                  winning_number={raffle.winning_number}
+                  draw_completed_at={raffle.draw_completed_at}
                 />
               </div>
             ))}
@@ -155,6 +177,10 @@ const RaffleCarousel = () => {
                         (raffle as any).image_url_3
                       ].filter(Boolean)}
                       image={raffle.image_url || prizeCarImage}
+                      winner_name={raffle.winner_name}
+                      winner_email={raffle.winner_email}
+                      winning_number={raffle.winning_number}
+                      draw_completed_at={raffle.draw_completed_at}
                     />
                   </div>
                 ))}

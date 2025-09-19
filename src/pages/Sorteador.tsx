@@ -55,8 +55,26 @@ export default function Sorteador() {
   const loadRaffles = async () => {
     try {
       setIsLoading(true);
-      const data = await RaffleService.getRaffles({ status: 'active' });
-      setRaffles(data || []);
+      // Buscar rifas ativas e completadas
+      const [activeRaffles, completedRaffles] = await Promise.all([
+        RaffleService.getRaffles({ status: 'active' }),
+        RaffleService.getRaffles({ status: 'completed' })
+      ]);
+      
+      // Combinar e ordenar: rifas ativas primeiro, depois completadas
+      const allRaffles = [
+        ...(activeRaffles || []),
+        ...(completedRaffles || [])
+      ].sort((a, b) => {
+        // Rifas ativas primeiro
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (b.status === 'active' && a.status !== 'active') return 1;
+        
+        // Dentro do mesmo status, ordenar por data
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      setRaffles(allRaffles);
     } catch (error) {
       console.error('Erro ao carregar rifas:', error);
       setRaffles([]);
