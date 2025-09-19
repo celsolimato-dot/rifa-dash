@@ -34,17 +34,21 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
   const [showWinnerAlert, setShowWinnerAlert] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 useEffect ClientDashboard executado, user:', user?.email);
     if (user?.email) {
       loadDashboardData();
     }
   }, [user?.email]);
 
   const loadDashboardData = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      console.log('🚫 loadDashboardData: Sem email do usuário');
+      return;
+    }
     
     try {
       setIsLoading(true);
-      console.log('🔄 Carregando dados do dashboard do cliente...');
+      console.log('🔄 Carregando dados do dashboard do cliente para:', user.email);
       
       const [statsData, activityData, rafflesData] = await Promise.all([
         RealClientStatsService.getClientStats(user.email),
@@ -58,7 +62,8 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
       setRecentActivity(activityData);
       setActiveRaffles(rafflesData);
 
-      // Check for won raffles
+      // Check for won raffles - IMPORTANTE: executar após carregar dados
+      console.log('🎯 Iniciando verificação de vitórias...');
       await checkWonRaffles();
     } catch (error) {
       console.error('❌ Erro ao carregar dados do dashboard:', error);
@@ -135,6 +140,27 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
               ✕ Fechar
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded flex items-center justify-between">
+          <span>
+            Debug: showWinnerAlert={showWinnerAlert.toString()}, 
+            wonRaffles.length={wonRaffles.length}, 
+            user.email={user?.email}
+          </span>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              console.log('🔄 Verificação manual de vitórias iniciada...');
+              checkWonRaffles();
+            }}
+          >
+            🔄 Verificar Vitórias
+          </Button>
         </div>
       )}
 
