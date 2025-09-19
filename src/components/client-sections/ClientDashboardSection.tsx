@@ -73,27 +73,42 @@ export const ClientDashboardSection: React.FC<ClientDashboardSectionProps> = ({ 
   };
 
   const checkWonRaffles = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      console.log('🚫 checkWonRaffles: Sem email do usuário');
+      return;
+    }
+    
+    console.log('🔍 checkWonRaffles: Iniciando busca para email:', user.email);
     
     try {
       const { data: wonRaffles, error } = await supabase
         .from('raffles')
-        .select('id, title, winner_name, winner_email, winning_number, draw_completed_at')
+        .select('id, title, winner_name, winner_email, winning_number, draw_completed_at, status')
         .eq('winner_email', user.email)
         .eq('status', 'finished')
         .not('winner_name', 'is', null);
 
+      console.log('🔍 Query resultado:', { wonRaffles, error });
+
       if (error) {
-        console.error('Erro ao verificar rifas ganhas:', error);
+        console.error('❌ Erro ao verificar rifas ganhas:', error);
         return;
       }
 
+      console.log('🔍 Rifas ganhas encontradas:', wonRaffles?.length || 0);
+      
       if (wonRaffles && wonRaffles.length > 0) {
+        console.log('🎉 Rifas ganhas:', wonRaffles);
         setWonRaffles(wonRaffles);
         setShowWinnerAlert(true);
+        console.log('✅ showWinnerAlert definido como true');
+      } else {
+        console.log('🚫 Nenhuma rifa ganha encontrada');
+        setShowWinnerAlert(false);
+        setWonRaffles([]);
       }
     } catch (error) {
-      console.error('Erro ao verificar rifas ganhas:', error);
+      console.error('❌ Erro ao verificar rifas ganhas:', error);
     }
   };
 
